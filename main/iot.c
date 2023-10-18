@@ -8,10 +8,13 @@
 #include "esp_system.h"
 #include "sending.c"
 #include "storage.c"
+#include "button.c"
+#include "led.c"
 
 void app_main(void)
 {
     init_nvs();
-
+    listen_for_reset();
+    show_led();
     push_data();
 }
