@@ -6,15 +6,15 @@
 #include "esp_chip_info.h"
 #include "esp_flash.h"
 #include "esp_system.h"
-#include "sending.c"
 #include "storage.c"
 #include "button.c"
 #include "led.c"
+#include "sending.c"
 
 void app_main(void)
 {
     init_nvs();
-    listen_for_reset();
+    // listen_for_reset();
     show_led();
     push_data();
 }
