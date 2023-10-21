@@ -1,3 +1,5 @@
+#include "esp_log.h"
+
 static uint blink_delay = 5000;
 static uint blink_timeout = 150;
 #define BLINK_GPIO 2
