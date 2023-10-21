@@ -66,7 +66,8 @@ bool connect_mqtt()
     return false;
 }
 
-void send_message()
+bool send_message(char *data)
 {
-    esp_mqtt_client_publish(client, MQTT_TOPIC, "Hello, MQTT!", 0, 0, 0);
+    esp_mqtt_client_publish(client, MQTT_TOPIC, data, 0, 0, 0);
+    return true;
 }

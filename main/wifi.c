@@ -20,11 +20,21 @@ static void event_handler(void *arg, esp_event_base_t event_base,
     }
     else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_DISCONNECTED)
     {
-        esp_wifi_connect();
-        ESP_LOGI("", "retry to connect to the AP");
         save_bool_to_nvs("wifi_connected", false);
         if (wifi_event_group != NULL)
             xEventGroupSetBits(wifi_event_group, WIFI_BIT);
+        bool wifi_enabled = false;
+        read_bool_from_nvs("wifi_enabled", &wifi_enabled);
+        if (wifi_enabled)
+        {
+            read_bool_from_nvs("wifi_enabled", &wifi_enabled);
+            ESP_LOGI("", "wifi is enabled, reconnecting");
+            esp_wifi_connect();
+        }
+        else
+        {
+            ESP_LOGI("", "wifi is disabled, not reconnecting");
+        }
     }
     else if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP)
     {
@@ -36,8 +46,14 @@ static void event_handler(void *arg, esp_event_base_t event_base,
     }
 }
 
+void disconnect_wifi()
+{
+    esp_wifi_disconnect();
+}
+
 void connect_wifi(const char *ssid, const char *pass)
 {
+    printf("Connecting to %s...\n", ssid);
     wifi_event_group = xEventGroupCreate();
     ESP_ERROR_CHECK(esp_netif_init());
 

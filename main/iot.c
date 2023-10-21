@@ -10,11 +10,20 @@
 #include "button.c"
 #include "led.c"
 #include "sending.c"
+#include "bluetooth.c"
+#include "app.c"
 
 void app_main(void)
 {
     init_nvs();
+    init_fs();
     // listen_for_reset();
-    show_led();
-    push_data();
+    // show_led();
+    // push_data();
+
+    // save_str_to_nvs("ssid", "iPhone (Mateusz)");
+    // save_str_to_nvs("password", "12345678");
+
+    // run();
+    start_bluetooth();
 }
