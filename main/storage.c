@@ -82,6 +82,7 @@ esp_err_t read_str_from_nvs(const char *key, char *value, size_t max_length)
     esp_err_t ret = nvs_open("iot", NVS_READONLY, &nvs);
     if (ret != ESP_OK)
     {
+        printf("Failed to open NVS\n");
         return ret;
     }
 
@@ -97,6 +98,10 @@ esp_err_t read_str_from_nvs(const char *key, char *value, size_t max_length)
         {
             ret = ESP_ERR_NVS_INVALID_LENGTH;
         }
+    }
+    else
+    {
+        printf("Failed to get NVS\n");
     }
 
     nvs_close(nvs);

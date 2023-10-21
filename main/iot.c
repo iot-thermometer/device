@@ -17,13 +17,15 @@ void app_main(void)
 {
     init_nvs();
     init_fs();
+    init_wifi();
     // listen_for_reset();
-    // show_led();
+    show_led();
     // push_data();
 
-    // save_str_to_nvs("ssid", "iPhone (Mateusz)");
-    // save_str_to_nvs("password", "12345678");
+    save_str_to_fs("");
+    save_str_to_nvs("ssid", "iPhone (Mateusz)");
+    save_str_to_nvs("password", "12345678");
 
-    // run();
-    start_bluetooth();
+    run();
+    // start_bluetooth();
 }

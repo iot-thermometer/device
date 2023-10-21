@@ -15,8 +15,10 @@ void led_watcher()
     while (1)
     {
         bool wifi_connected = false;
+        bool wifi_enabled = false;
         read_bool_from_nvs("wifi_connected", &wifi_connected);
-        if (!wifi_connected)
+        read_bool_from_nvs("wifi_enabled", &wifi_enabled);
+        if (wifi_enabled && !wifi_connected)
         {
             blink_delay = 250;
             blink_timeout = 250;

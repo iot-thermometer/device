@@ -26,12 +26,20 @@ static esp_err_t mqtt_event_handler(void *handler_args, esp_event_base_t base, i
         break;
     case MQTT_EVENT_DISCONNECTED:
         ESP_LOGI("", "MQTT_EVENT_DISCONNECTED");
-        xEventGroupSetBits(mqtt_event_group, MQTT_DISCONNECTED_BIT);
         break;
     default:
         break;
     }
     return ESP_OK;
+}
+
+void disconnect_mqtt()
+{
+    esp_mqtt_client_stop(client);
+    esp_mqtt_client_destroy(client);
+
+    printf("Disconnected from mqtt\n");
+    vTaskDelay(pdMS_TO_TICKS(1000));
 }
 
 bool connect_mqtt()
