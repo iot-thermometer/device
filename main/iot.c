@@ -14,19 +14,22 @@
 #include "bluetooth.c"
 #include "http.c"
 #include "time.c"
+#include "crypto.c"
 #include "app.c"
 
 void app_main(void)
 {
-    init_nvs();
-    init_fs();
-    init_wifi();
-    listen_for_reset();
-    show_led();
+    // init_nvs();
+    // init_fs();
+    // init_wifi();
+    // listen_for_reset();
+    // show_led();
 
-    save_str_to_nvs("ssid", "iPhone (Mateusz)");
-    save_str_to_nvs("password", "12345678");
-    save_int_to_nvs("id", 7);
-    save_str_to_nvs("token", "abc");
-    run();
+    // save_str_to_nvs("ssid", "iPhone (Mateusz)");
+    // save_str_to_nvs("password", "12345678");
+    // save_int_to_nvs("id", 7);
+    // save_str_to_nvs("token", "abc");
+    // run();
+
+    encrypt_text("mihrbvpmluyvbsyk", "mihrbvpmluyvbsyk");
 }
