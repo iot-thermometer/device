@@ -13,6 +13,7 @@
 #include "sending.c"
 #include "bluetooth.c"
 #include "http.c"
+#include "time.c"
 #include "app.c"
 
 void app_main(void)
@@ -25,6 +26,7 @@ void app_main(void)
 
     save_str_to_nvs("ssid", "iPhone (Mateusz)");
     save_str_to_nvs("password", "12345678");
-
+    save_int_to_nvs("id", 7);
+    save_str_to_nvs("token", "abc");
     run();
 }

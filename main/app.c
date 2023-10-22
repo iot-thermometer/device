@@ -20,7 +20,9 @@ void push_loop()
             read_int_from_nvs("push_interval", &push_interval);
             printf("Push interval: %d\n", push_interval);
         }
+
         printf("Pushing...\n");
+
         char ssid[33];
         char password[65];
         read_str_from_nvs("ssid", ssid, 32);
@@ -40,6 +42,7 @@ void push_loop()
 
         // pull_config();
 
+        obtain_time();
         connect_mqtt();
 
         DIR *dir;
@@ -103,19 +106,28 @@ void read_loop()
 
         cJSON *root = cJSON_CreateObject();
 
-        cJSON_AddNumberToObject(root, "device_id", 1);
-        cJSON_AddStringToObject(root, "type", "TEMPERATURE");
-        cJSON_AddNumberToObject(root, "value", reading);
-        cJSON_AddNumberToObject(root, "time", 1696699342);
+        time_t now;
+        time(&now);
 
-        char *new_data = cJSON_PrintUnformatted(root);
+        if (time(&now) > 10000)
+        {
+            int id;
+            read_int_from_nvs("id", &id);
+            cJSON_AddNumberToObject(root, "device_id", id);
+            cJSON_AddStringToObject(root, "type", "TEMPERATURE");
+            cJSON_AddNumberToObject(root, "value", esp_random());
 
-        cJSON_Delete(root);
+            cJSON_AddNumberToObject(root, "time", time(&now));
 
-        char *filename = (char *)malloc(40 * sizeof(char));
-        sprintf(filename, "/spiffs/%d.txt", (int)esp_random());
-        save_str_to_fs(filename, new_data);
-        printf("Saved file: %s\n", filename);
+            char *new_data = cJSON_PrintUnformatted(root);
+
+            cJSON_Delete(root);
+
+            char *filename = (char *)malloc(40 * sizeof(char));
+            sprintf(filename, "/spiffs/%d.txt", (int)esp_random());
+            save_str_to_fs(filename, new_data);
+            printf("Saved file: %s\n", filename);
+        }
 
         vTaskDelay(pdMS_TO_TICKS(reading_interval));
     }
