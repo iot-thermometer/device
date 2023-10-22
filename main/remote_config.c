@@ -15,8 +15,8 @@ void parse_remote_config(const char *json)
     int reading_interval = cJSON_GetObjectItem(root, "reading_interval")->valueint;
     int push_interval = cJSON_GetObjectItem(root, "push_interval")->valueint;
 
-    printf("Reading interval: %d\n", reading_interval);
-    printf("Push interval: %d\n", push_interval);
+    printf("Setting reading interval: %d\n", reading_interval);
+    printf("Setting push interval: %d\n", push_interval);
     save_int_to_nvs("reading_interval", reading_interval);
     save_int_to_nvs("push_interval", push_interval);
 

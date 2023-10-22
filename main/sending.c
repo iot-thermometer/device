@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include "wifi.c"
 #include "mqtt.c"
-#include "http.c"
 #include "remote_config.c"
 
 void hello()

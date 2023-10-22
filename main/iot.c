@@ -11,6 +11,7 @@
 #include "led.c"
 #include "sending.c"
 #include "bluetooth.c"
+#include "http.c"
 #include "app.c"
 
 void app_main(void)

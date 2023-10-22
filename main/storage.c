@@ -170,9 +170,9 @@ bool exists_in_nvs(const char *key)
         return false;
     }
 
+    bool b = false;
     size_t required_size;
-    ret = nvs_get_str(nvs, key, NULL, &required_size);
-    if (ret == ESP_OK)
+    if (nvs_get_str(nvs, key, NULL, &required_size) == ESP_OK || nvs_get_u8(nvs, key, (uint8_t *)&b) == ESP_OK)
     {
         return true;
     }

@@ -101,7 +101,7 @@ char *make_http_request(const char *url)
                                            pdFALSE,
                                            portMAX_DELAY);
 
-    esp_http_client_cleanup(client);
+    // esp_http_client_cleanup(client);
     vEventGroupDelete(http_event_group);
 
     return result;

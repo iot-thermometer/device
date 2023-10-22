@@ -3,18 +3,23 @@ float read_sensor()
     return 42.0;
 }
 
+void pull_config()
+{
+    const char *json = make_http_request("https://gist.githubusercontent.com/matisiekpl/cd086500b92dfa3b0493aa6f518ad5b7/raw/9848b277efde3ef75485a088b24e3ee188d6a1b7/device.json");
+    parse_remote_config(json);
+}
+
 void push_loop()
 {
-
     int push_interval = 3000;
-
-    // if (exists_in_nvs("push_interval"))
-    // {
-    //     read_int_from_nvs("push_interval", &push_interval);
-    // }
 
     while (1)
     {
+        if (exists_in_nvs("push_interval"))
+        {
+            read_int_from_nvs("push_interval", &push_interval);
+            printf("Push interval: %d\n", push_interval);
+        }
         printf("Pushing...\n");
         char ssid[33];
         char password[65];
@@ -32,6 +37,8 @@ void push_loop()
             vTaskDelay(pdMS_TO_TICKS(1000));
         }
         printf("Connected!\n");
+
+        pull_config();
 
         char existing_data[1000];
         read_str_from_fs(existing_data, 1000);
@@ -65,6 +72,7 @@ void read_loop()
         if (exists_in_nvs("reading_interval"))
         {
             read_int_from_nvs("reading_interval", &reading_interval);
+            printf("Reading interval: %d\n", reading_interval);
         }
 
         float reading = read_sensor();
@@ -80,6 +88,8 @@ void read_loop()
         vTaskDelay(pdMS_TO_TICKS(reading_interval));
     }
 }
+
+StaticTask_t xTaskBuffer;
 
 void run()
 {
