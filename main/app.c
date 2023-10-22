@@ -11,7 +11,7 @@ void pull_config()
 
 void push_loop()
 {
-    int push_interval = 3000;
+    int push_interval = 10000;
 
     while (1)
     {
@@ -38,14 +38,39 @@ void push_loop()
         }
         printf("Connected!\n");
 
-        pull_config();
+        // pull_config();
 
-        char existing_data[1000];
-        // read_str_from_fs(existing_data, 1000);
-
-        printf("Existing data: %s\n", existing_data);
         connect_mqtt();
-        int suc = send_message(existing_data);
+
+        DIR *dir;
+        struct dirent *ent;
+        dir = opendir("/spiffs");
+
+        int counter = 0;
+
+        while (true)
+        {
+            struct dirent *de = readdir(dir);
+            if (!de)
+                break;
+
+            char *filename = malloc(512 * sizeof(char));
+            sprintf(filename, "/spiffs/%s", de->d_name);
+            char *data = read_str_from_fs(filename);
+
+            if (strlen(data) == 0)
+                continue;
+
+            int suc = send_message(data);
+
+            counter++;
+            remove(filename);
+            printf("Sent file: %s\n", de->d_name);
+        }
+
+        char *summary = (char *)malloc(100 * sizeof(char));
+        sprintf(summary, "Sent %d files", counter);
+        int suc = send_message(summary);
         if (!suc)
         {
             disconnect_mqtt();
@@ -55,7 +80,6 @@ void push_loop()
         }
 
         disconnect_mqtt();
-        save_str_to_fs("");
         printf("Pushed!\n");
         save_bool_to_nvs("wifi_enabled", false);
         disconnect_wifi();
@@ -76,7 +100,6 @@ void read_loop()
         }
 
         float reading = read_sensor();
-        printf("Reading: %f\n", reading);
 
         cJSON *root = cJSON_CreateObject();
 
@@ -87,18 +110,12 @@ void read_loop()
 
         char *new_data = cJSON_PrintUnformatted(root);
 
-        char *existing_data = read_str_from_fs();
-
-        char *final_data = malloc(strlen(existing_data) + 1 + strlen(new_data) + 1);
-        strcpy(final_data, existing_data);
-        strcat(final_data, "\n");
-        strcat(final_data, new_data);
-
         cJSON_Delete(root);
 
-        save_str_to_fs(final_data);
-        printf("Saved!\n");
-        printf("Final: %s\n", final_data);
+        char *filename = (char *)malloc(40 * sizeof(char));
+        sprintf(filename, "/spiffs/%d.txt", (int)esp_random());
+        save_str_to_fs(filename, new_data);
+        printf("Saved file: %s\n", filename);
 
         vTaskDelay(pdMS_TO_TICKS(reading_interval));
     }
@@ -110,7 +127,7 @@ void run()
 {
     if (exists_in_nvs("ssid"))
     {
-        // xTaskCreate(push_loop, "push_data", 32768, NULL, 10, NULL);
+        xTaskCreate(push_loop, "push_data", 32768, NULL, 10, NULL);
         read_loop();
     }
     else

@@ -93,13 +93,13 @@ char *make_http_request(const char *url)
         .event_handler = _http_event_handler,
     };
     esp_http_client_handle_t client = esp_http_client_init(&config);
-    esp_err_t err = esp_http_client_perform(client);
+    esp_http_client_perform(client);
 
-    EventBits_t bits = xEventGroupWaitBits(http_event_group,
-                                           HTTP_BIT,
-                                           pdFALSE,
-                                           pdFALSE,
-                                           portMAX_DELAY);
+    xEventGroupWaitBits(http_event_group,
+                        HTTP_BIT,
+                        pdFALSE,
+                        pdFALSE,
+                        portMAX_DELAY);
 
     // esp_http_client_cleanup(client);
     vEventGroupDelete(http_event_group);

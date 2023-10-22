@@ -34,6 +34,21 @@ void button_observer()
         if (counter == 5)
         {
             printf("Resetting...\n");
+            DIR *dir;
+            struct dirent *ent;
+            dir = opendir("/spiffs");
+            while (true)
+            {
+                struct dirent *de = readdir(dir);
+                if (!de)
+                    break;
+
+                char *filename = malloc(512 * sizeof(char));
+                sprintf(filename, "/spiffs/%s", de->d_name);
+                remove(filename);
+                printf("Deleted: %s\n", de->d_name);
+            }
+
             ESP_ERROR_CHECK(reset_nvs());
             esp_restart();
         }

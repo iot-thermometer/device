@@ -181,9 +181,9 @@ bool exists_in_nvs(const char *key)
     return false;
 }
 
-void save_str_to_fs(char *value)
+void save_str_to_fs(char *filename, char *value)
 {
-    FILE *f = fopen("/spiffs/readings.txt", "w");
+    FILE *f = fopen(filename, "w");
     if (f == NULL)
     {
         printf("Error opening file!\n");
@@ -195,9 +195,9 @@ void save_str_to_fs(char *value)
     fclose(f);
 }
 
-char *read_str_from_fs()
+char *read_str_from_fs(char *filename)
 {
-    FILE *f = fopen("/spiffs/readings.txt", "r");
+    FILE *f = fopen(filename, "r");
     fseek(f, 0, SEEK_END);
     long fsize = ftell(f);
     fseek(f, 0, SEEK_SET);
