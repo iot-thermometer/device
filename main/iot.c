@@ -31,5 +31,5 @@ void app_main(void)
     // save_str_to_nvs("token", "abc");
     // run();
 
-    encrypt_text("mihrbvpmluyvbsyk", "mihrbvpmluyvbsyk");
+    encrypt_text("mihrbvpmluyvbsykmihrbvpmluyvbsykmihrbvpmluyvbsyk", "mihrbvpmluyvbsyk");
 }
