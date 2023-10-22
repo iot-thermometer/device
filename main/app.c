@@ -51,6 +51,9 @@ void push_loop()
 
         int counter = 0;
 
+        int id;
+        read_int_from_nvs("id", &id);
+
         while (true)
         {
             struct dirent *de = readdir(dir);
@@ -64,11 +67,20 @@ void push_loop()
             if (strlen(data) == 0)
                 continue;
 
-            int suc = send_message(data);
+            char *final_data = (char *)malloc((strlen(data)) * sizeof(char) + 17);
+            sprintf(final_data, "%d;%s", id, data);
 
-            counter++;
-            remove(filename);
-            printf("Sent file: %s\n", de->d_name);
+            int suc = send_message(final_data);
+            if (suc)
+            {
+                counter++;
+                remove(filename);
+                printf("Sent file: %s\n", de->d_name);
+            }
+            else
+            {
+                printf("Failed to send file: %s\n", de->d_name);
+            }
         }
 
         char *summary = (char *)malloc(100 * sizeof(char));
@@ -109,6 +121,9 @@ void read_loop()
         time_t now;
         time(&now);
 
+        char token[20];
+        read_str_from_nvs("token", token, 19);
+
         if (time(&now) > 10000)
         {
             int id;
@@ -120,8 +135,7 @@ void read_loop()
             cJSON_AddNumberToObject(root, "time", time(&now));
 
             char *new_data = cJSON_PrintUnformatted(root);
-
-            char *encrypted_data = encrypt_text(new_data, "");
+            char *encrypted_data = encrypt_text(new_data, token);
 
             cJSON_Delete(root);
 

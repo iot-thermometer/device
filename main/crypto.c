@@ -5,7 +5,7 @@
 #include "mbedtls/ctr_drbg.h"
 #include "mbedtls/error.h"
 
-char *encrypt_text(const char *input, const char *key)
+char *encrypt_text(const char *input, char *key)
 {
     mbedtls_aes_context aes;
     mbedtls_entropy_context entropy;
