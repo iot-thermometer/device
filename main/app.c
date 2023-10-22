@@ -41,7 +41,7 @@ void push_loop()
         pull_config();
 
         char existing_data[1000];
-        read_str_from_fs(existing_data, 1000);
+        // read_str_from_fs(existing_data, 1000);
 
         printf("Existing data: %s\n", existing_data);
         connect_mqtt();
@@ -78,12 +78,27 @@ void read_loop()
         float reading = read_sensor();
         printf("Reading: %f\n", reading);
 
-        char existing_data[1000];
+        cJSON *root = cJSON_CreateObject();
 
-        read_str_from_fs(existing_data, 1000);
-        char *new_data = malloc(2000);
-        // sprintf(new_data, "%s%f\n", existing_data, reading);
-        // save_str_to_fs(new_data);
+        cJSON_AddNumberToObject(root, "device_id", 1);
+        cJSON_AddStringToObject(root, "type", "TEMPERATURE");
+        cJSON_AddNumberToObject(root, "value", reading);
+        cJSON_AddNumberToObject(root, "time", 1696699342);
+
+        char *new_data = cJSON_PrintUnformatted(root);
+
+        char *existing_data = read_str_from_fs();
+
+        char *final_data = malloc(strlen(existing_data) + 1 + strlen(new_data) + 1);
+        strcpy(final_data, existing_data);
+        strcat(final_data, "\n");
+        strcat(final_data, new_data);
+
+        cJSON_Delete(root);
+
+        save_str_to_fs(final_data);
+        printf("Saved!\n");
+        printf("Final: %s\n", final_data);
 
         vTaskDelay(pdMS_TO_TICKS(reading_interval));
     }
@@ -95,7 +110,7 @@ void run()
 {
     if (exists_in_nvs("ssid"))
     {
-        xTaskCreate(push_loop, "push_data", 32768, NULL, 10, NULL);
+        // xTaskCreate(push_loop, "push_data", 32768, NULL, 10, NULL);
         read_loop();
     }
     else

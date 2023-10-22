@@ -190,36 +190,34 @@ void save_str_to_fs(char *value)
         return;
     }
 
-    /* print some text */
     fprintf(f, "%s", value);
 
     fclose(f);
 }
 
-void read_str_from_fs(char *value, size_t max_length)
+char *read_str_from_fs()
 {
     FILE *f = fopen("/spiffs/readings.txt", "r");
-    if (f == NULL)
-    {
-        printf("Error opening file!\n");
-        return;
-    }
+    fseek(f, 0, SEEK_END);
+    long fsize = ftell(f);
+    fseek(f, 0, SEEK_SET);
 
-    /* print some text */
-    fgets(value, max_length, f);
-
+    char *value = malloc(fsize + 1);
+    fread(value, fsize, 1, f);
     fclose(f);
+    value[fsize] = '\0';
+
+    return value;
 }
 
 void init_fs()
 {
     esp_vfs_spiffs_conf_t conf = {
         .base_path = "/spiffs",
-        .partition_label = NULL, // Default "spiffs" partition
+        .partition_label = NULL,
         .max_files = 5,
         .format_if_mount_failed = true};
 
-    // Mount SPIFFS
     esp_err_t
         ret = esp_vfs_spiffs_register(&conf);
     if (ret != ESP_OK)
