@@ -108,6 +108,7 @@ void read_loop()
     int reading_interval = 4000;
     while (1)
     {
+        esp_task_wdt_reset();
         if (exists_in_nvs("reading_interval"))
         {
             read_int_from_nvs("reading_interval", &reading_interval);
@@ -155,6 +156,7 @@ void run()
 {
     if (exists_in_nvs("ssid"))
     {
+        esp_task_wdt_init(10, true);
         xTaskCreate(push_loop, "push_data", 32768, NULL, 10, NULL);
         read_loop();
     }
