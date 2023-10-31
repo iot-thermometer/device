@@ -6,6 +6,7 @@
 #include "esp_chip_info.h"
 #include "esp_flash.h"
 #include "esp_system.h"
+#include "esp_task_wdt.h"
 #include "dirent.h"
 #include "storage.c"
 #include "button.c"
@@ -15,6 +16,8 @@
 #include "http.c"
 #include "time.c"
 #include "crypto.c"
+#include "ota.c"
+
 #include "app.c"
 
 void app_main(void)

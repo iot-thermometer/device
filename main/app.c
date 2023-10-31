@@ -1,3 +1,4 @@
+#define WDT_TIMEOUT 10000
 float read_sensor()
 {
     return 42.0;
@@ -39,6 +40,8 @@ void push_loop()
             vTaskDelay(pdMS_TO_TICKS(1000));
         }
         printf("Connected!\n");
+
+        // check_update();
 
         // pull_config();
 
@@ -156,7 +159,13 @@ void run()
 {
     if (exists_in_nvs("ssid"))
     {
-        esp_task_wdt_init(10, true);
+        esp_task_wdt_config_t twdt_config = {
+            .timeout_ms = WDT_TIMEOUT,
+            .idle_core_mask = (1 << portNUM_PROCESSORS) - 1, // Bitmask of all cores
+            .trigger_panic = false,
+        };
+        esp_task_wdt_init(&twdt_config);
+        esp_task_wdt_add(NULL);
         xTaskCreate(push_loop, "push_data", 32768, NULL, 10, NULL);
         read_loop();
     }
