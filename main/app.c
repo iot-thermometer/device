@@ -105,7 +105,7 @@ void push_loop()
 
 void read_loop()
 {
-    int reading_interval = 1000;
+    int reading_interval = 4000;
     while (1)
     {
         if (exists_in_nvs("reading_interval"))

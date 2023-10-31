@@ -27,7 +27,9 @@ void app_main(void)
 
     save_str_to_nvs("ssid", "iPhone (Mateusz)");
     save_str_to_nvs("password", "12345678");
-    save_str_to_nvs("token", "mihrbvpmluyvbsyk");
-    save_int_to_nvs("id", 7);
+    save_str_to_nvs("token", "HHiDlZkwmPKyZAjU");
+    save_int_to_nvs("id", 2);
     run();
+
+    // start_bluetooth();
 }

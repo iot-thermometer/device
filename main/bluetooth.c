@@ -212,6 +212,7 @@ void example_prepare_write_event_env(esp_gatt_if_t gatts_if, prepare_type_env_t 
 
 void example_exec_write_event_env(prepare_type_env_t *prepare_write_env, esp_ble_gatts_cb_param_t *param)
 {
+    printf("DEBUG1");
     if (param->exec_write.exec_write_flag == ESP_GATT_PREP_WRITE_EXEC && prepare_write_env->prepare_buf)
     {
         esp_log_buffer_hex(GATTS_TABLE_TAG, prepare_write_env->prepare_buf, prepare_write_env->prepare_len);
@@ -266,6 +267,7 @@ static void gatts_profile_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_
             // the data length of gattc write  must be less than GATTS_DEMO_CHAR_VAL_LEN_MAX.
             ESP_LOGI(GATTS_TABLE_TAG, "GATT_WRITE_EVT, handle = %d, value len = %d, value :", param->write.handle, param->write.len);
             esp_log_buffer_hex(GATTS_TABLE_TAG, param->write.value, param->write.len);
+            printf("Log");
 
             /* send response when param->write.need_rsp is true*/
             if (param->write.need_rsp)
