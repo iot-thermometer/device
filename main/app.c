@@ -7,7 +7,8 @@ float read_sensor()
 void pull_config()
 {
     const char *json = make_http_request("https://gist.githubusercontent.com/matisiekpl/cd086500b92dfa3b0493aa6f518ad5b7/raw/9848b277efde3ef75485a088b24e3ee188d6a1b7/device.json");
-    parse_remote_config(json);
+    printf("CONFIG JSON: %s\n", json);
+    // parse_remote_config(json);
 }
 
 void push_loop()
@@ -43,7 +44,7 @@ void push_loop()
 
         // check_update();
 
-        // pull_config();
+        pull_config();
 
         obtain_time();
         connect_mqtt();
