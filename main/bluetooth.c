@@ -48,14 +48,14 @@ static int device_read(uint16_t con_handle, uint16_t attr_handle, struct ble_gat
 {
     if (connected == 1)
     {
-        char *response = '{ "status": "OK" }';
+        char *response = "{ \"status\": \"OK\" }";
         os_mbuf_append(ctxt->om, response, strlen(response));
         vTaskDelay(5000 / portTICK_PERIOD_MS);
         esp_restart();
     }
     else
     {
-        char *response = '{ "status": "PENDING" }';
+        char *response = "{ \"status\": \"PENDING\" }";
         os_mbuf_append(ctxt->om, response, strlen(response));
     }
     return 0;
