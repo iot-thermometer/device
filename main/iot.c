@@ -20,7 +20,6 @@ static const char remote_device_name[] = "realme GT Master Edition";
 #define REMOTE_SERVICE_UUID 0x1805
 #define REMOTE_NOTIFY_CHAR_UUID 0x2A2b
 
-#include <esp_task_wdt.h>
 #include <stdint.h>
 #include <string.h>
 #include <stdbool.h>
@@ -476,7 +475,6 @@ static void esp_gap_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *par
             ESP_LOGI(GATTC_TAG, "searched Device Name Len %d", adv_name_len);
             esp_log_buffer_char(GATTC_TAG, adv_name, adv_name_len);
 
-            esp_task_wdt_reset();
             ESP_LOGI(GATTC_TAG, "\n");
 
             if (adv_name != NULL)
@@ -593,7 +591,7 @@ void purge()
 
 void app_main(void)
 {
-    xTaskCreate(purge, "purge", 2048, NULL, 5, NULL);
+    // xTaskCreate(purge, "purge", 2048, NULL, tskIDLE_PRIORITY, NULL);
     // Initialize NVS.
     esp_err_t ret = nvs_flash_init();
     if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND)
