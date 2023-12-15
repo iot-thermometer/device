@@ -41,6 +41,7 @@ static int device_write(uint16_t conn_handle, uint16_t attr_handle, struct ble_g
 
     connected = 1;
 
+    esp_restart();
     return 0;
 }
 
