@@ -88,7 +88,7 @@ void push_loop()
         }
 
         char *summary = (char *)malloc(100 * sizeof(char));
-        sprintf(summary, "Sent %d files", counter);
+        sprintf(summary, "XDEBUGSent %d files", counter);
         int suc = send_message(summary);
         if (!suc)
         {
@@ -146,8 +146,8 @@ void read_loop()
 
             char *filename = (char *)malloc(40 * sizeof(char));
             sprintf(filename, "/spiffs/%d.txt", (int)esp_random());
-            // save_str_to_fs(filename, encrypted_data);
-            // printf("Saved file: %s\n", filename);
+            save_str_to_fs(filename, encrypted_data);
+            printf("Saved file: %s\n", filename);
         }
 
         vTaskDelay(pdMS_TO_TICKS(reading_interval));
