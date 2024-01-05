@@ -172,6 +172,6 @@ void run()
     }
     else
     {
-        start_bluetooth();
+        // start_bluetooth();
     }
 }
