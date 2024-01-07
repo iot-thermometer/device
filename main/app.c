@@ -158,6 +158,10 @@ StaticTask_t xTaskBuffer;
 
 void run()
 {
+    printf("DEBUG1");
+
+    vTaskDelay(pdMS_TO_TICKS(5000));
+
     if (exists_in_nvs("ssid"))
     {
         esp_task_wdt_config_t twdt_config = {
