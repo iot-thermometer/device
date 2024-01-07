@@ -2,8 +2,8 @@
 #include <freertos/task.h>
 
 #define AM2320_I2C_ADDR (0x5c)
-#define CONFIG_EXAMPLE_I2C_MASTER_SDA 18
-#define CONFIG_EXAMPLE_I2C_MASTER_SCL 19
+#define CONFIG_EXAMPLE_I2C_MASTER_SDA 21
+#define CONFIG_EXAMPLE_I2C_MASTER_SCL 22
 #define CONFIG_I2CDEV_TIMEOUT 1000
 #include <am2320.h>
 #include <am2320.c>
