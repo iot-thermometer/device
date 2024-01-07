@@ -32,8 +32,6 @@ void app_main(void)
     save_str_to_nvs("password", "12345678");
     save_str_to_nvs("token", "HHiDlZkwmPKyZAjU");
     save_int_to_nvs("id", 2);
-    run();
-    // printf("test");
 
-    // start_bluetooth();
+    run();
 }
