@@ -134,8 +134,8 @@ void read_loop()
             int id;
             read_int_from_nvs("id", &id);
             cJSON_AddNumberToObject(root, "device_id", id);
-            cJSON_AddStringToObject(root, "type", "TEMPERATURE");
-            cJSON_AddNumberToObject(root, "value", esp_random());
+            cJSON_AddNumberToObject(root, "soil_moisture", esp_random());
+            cJSON_AddNumberToObject(root, "temperature", esp_random());
 
             cJSON_AddNumberToObject(root, "time", time(&now));
 
