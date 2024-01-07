@@ -1,37 +1,43 @@
-#include <stdio.h>
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
+
+#define AM2320_I2C_ADDR (0x5c)
+#define CONFIG_EXAMPLE_I2C_MASTER_SDA 18
+#define CONFIG_EXAMPLE_I2C_MASTER_SCL 19
+#define CONFIG_I2CDEV_TIMEOUT 1000
+#include <am2320.h>
+#include <am2320.c>
+#include <i2cdev.h>
+#include <i2cdev.c>
+#include <esp_log.h>
 #include <inttypes.h>
-#include "sdkconfig.h"
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include "esp_chip_info.h"
-#include "esp_flash.h"
-#include "esp_system.h"
-#include "esp_task_wdt.h"
-#include "dirent.h"
-#include "storage.c"
-#include "button.c"
-#include "led.c"
-#include "sending.c"
-#include "bluetooth.c"
-#include "http.c"
-#include "time.c"
-#include "crypto.c"
-#include "ota.c"
 
-#include "app.c"
+#ifndef APP_CPU_NUM
+#define APP_CPU_NUM PRO_CPU_NUM
+#endif
 
-void app_main(void)
+void task(void *pvParameters)
 {
-    init_nvs();
-    init_fs();
-    init_wifi();
-    listen_for_reset();
-    show_led();
+    i2c_dev_t dev = {0};
 
-    save_str_to_nvs("ssid", "iPhone (Mateusz)");
-    save_str_to_nvs("password", "12345678");
-    save_str_to_nvs("token", "HHiDlZkwmPKyZAjU");
-    save_int_to_nvs("id", 2);
+    ESP_ERROR_CHECK(am2320_init_desc(&dev, 0, CONFIG_EXAMPLE_I2C_MASTER_SDA, CONFIG_EXAMPLE_I2C_MASTER_SCL));
 
-    run();
+    float temperature, humidity;
+
+    while (1)
+    {
+        esp_err_t res = am2320_get_rht(&dev, &temperature, &humidity);
+        if (res == ESP_OK)
+            ESP_LOGI(TAG, "Temperature: %.1f°C, Humidity: %.1f%%", temperature, humidity);
+        else
+            ESP_LOGE(TAG, "Error reading data: %d (%s)", res, esp_err_to_name(res));
+
+        vTaskDelay(pdMS_TO_TICKS(500));
+    }
+}
+
+void app_main()
+{
+    ESP_ERROR_CHECK(i2cdev_init());
+    xTaskCreatePinnedToCore(task, TAG, configMINIMAL_STACK_SIZE * 8, NULL, 5, NULL, APP_CPU_NUM);
 }
