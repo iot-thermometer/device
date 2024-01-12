@@ -9,8 +9,6 @@
 #include "esp_http_client.h"
 #include "esp_https_ota.h"
 
-#include "wifi_functions.h"
-
 #define FIRMWARE_VERSION 0.1
 #define UPDATE_JSON_URL "https://esp32tutorial.netsons.org/https_ota/firmware.json"
 
