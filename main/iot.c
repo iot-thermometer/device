@@ -26,7 +26,7 @@ void app_main(void)
 {
     init_nvs();
     init_fs();
-    // init_wifi();
+    init_wifi();
     listen_for_reset();
     show_led();
 
