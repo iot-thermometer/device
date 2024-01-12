@@ -10,8 +10,10 @@
 #include "dirent.h"
 #include "storage.c"
 #include "button.c"
+#include "wifi.c"
+#include "mqtt.c"
+#include "remote_config.c"
 #include "led.c"
-#include "sending.c"
 #include "bluetooth.c"
 #include "http.c"
 #include "time.c"
@@ -24,7 +26,7 @@ void app_main(void)
 {
     init_nvs();
     init_fs();
-    init_wifi();
+    // init_wifi();
     listen_for_reset();
     show_led();
 
