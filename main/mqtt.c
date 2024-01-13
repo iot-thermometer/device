@@ -14,6 +14,15 @@ static EventGroupHandle_t mqtt_event_group;
 #define MQTT_DISCONNECTED_BIT BIT1
 
 static const char *MQTT_TAG = "MQTT";
+bool published = false;
+
+void disconnect_mqtt() {
+    esp_mqtt_client_stop(client);
+    esp_mqtt_client_destroy(client);
+
+    ESP_LOGI(MQTT_TAG, "Disconnected");
+    vTaskDelay(pdMS_TO_TICKS(1000));
+}
 
 static esp_err_t mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_t event_id, void *event_data) {
     esp_mqtt_event_handle_t event = event_data;
@@ -24,20 +33,18 @@ static esp_err_t mqtt_event_handler(void *handler_args, esp_event_base_t base, i
             xEventGroupSetBits(mqtt_event_group, MQTT_CONNECTED_BIT);
             break;
         case MQTT_EVENT_DISCONNECTED:
-            ESP_LOGI(MQTT_TAG, "Closed");
+            if (mqtt_event_group != NULL) {
+                xEventGroupSetBits(mqtt_event_group, MQTT_DISCONNECTED_BIT);
+            }
+            break;
+        case MQTT_EVENT_PUBLISHED:
+            ESP_LOGI(MQTT_TAG, "MQTT_EVENT_PUBLISHED, msg_id=%d", event->msg_id);
+            published = true;
             break;
         default:
             break;
     }
     return ESP_OK;
-}
-
-void disconnect_mqtt() {
-    esp_mqtt_client_stop(client);
-    esp_mqtt_client_destroy(client);
-
-    ESP_LOGI(MQTT_TAG, "Disconnected");
-    vTaskDelay(pdMS_TO_TICKS(1000));
 }
 
 bool connect_mqtt() {
@@ -56,7 +63,11 @@ bool connect_mqtt() {
                                            pdFALSE,
                                            pdFALSE,
                                            portMAX_DELAY);
+
+    esp_mqtt_client_unregister_event(client, ESP_EVENT_ANY_ID, mqtt_event_handler);
+
     vEventGroupDelete(mqtt_event_group);
+    mqtt_event_group = NULL;
 
     if (bits & MQTT_CONNECTED_BIT) {
         return true;
@@ -67,6 +78,12 @@ bool connect_mqtt() {
 }
 
 bool send_message(char *topic, char *data) {
+    published = false;
     esp_mqtt_client_publish(client, topic, data, 0, 0, 0);
+
+    while (!published) {
+        vTaskDelay(pdMS_TO_TICKS(100));
+    }
+
     return true;
 }

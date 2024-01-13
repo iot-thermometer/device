@@ -50,6 +50,7 @@ void disconnect_wifi() {
 
     esp_wifi_disconnect();
     esp_wifi_stop();
+    save_bool_to_nvs("wifi_enabled", false);
 }
 
 void init_wifi() {

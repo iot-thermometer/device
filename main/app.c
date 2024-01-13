@@ -27,8 +27,6 @@ void push_data() {
         if (breaker > 10) {
             ESP_LOGE(APP_TAG, "Attempting to connect to Wifi failed. Will try in next push attempt");
             disconnect_wifi();
-            save_bool_to_nvs("wifi_enabled", false);
-            vTaskDelay(pdMS_TO_TICKS(300));
             vTaskDelete(NULL);
             return;
         }
@@ -44,7 +42,14 @@ void push_data() {
     pull_config();
 
     obtain_time();
-    connect_mqtt();
+    bool mqtt_connected = connect_mqtt();
+    if (!mqtt_connected) {
+        ESP_LOGE(APP_TAG,
+                 "MQTT broker is unavailable. Contact manufacturer status website to ensure broker is online.");
+        disconnect_mqtt();
+        disconnect_wifi();
+        vTaskDelete(NULL);
+    }
 
     DIR *dir;
     struct dirent *ent;
@@ -64,8 +69,7 @@ void push_data() {
         sprintf(filename, "/spiffs/%s", de->d_name);
         char *data = read_str_from_fs(filename);
 
-        if (strlen(data) == 0)
-        {
+        if (strlen(data) == 0) {
             free(filename);
             continue;
         }
