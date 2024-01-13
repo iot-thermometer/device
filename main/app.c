@@ -42,8 +42,7 @@ void push_data() {
     }
     ESP_LOGI(APP_TAG, "Device is online!");
 
-    // check_update();
-
+    check_update();
     pull_config();
 
     obtain_time();

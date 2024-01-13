@@ -10,6 +10,7 @@
 #include "dirent.h"
 #include "esp_sleep.h"
 
+#include "config.c"
 #include "storage.c"
 #include "button.c"
 #include "wifi.c"
