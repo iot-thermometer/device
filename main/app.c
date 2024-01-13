@@ -99,15 +99,13 @@ void push_data() {
 }
 
 void main_loop() {
-    int reading_interval = 4000;
-    int push_interval = 3;
+    int reading_interval = 100000;
+    int push_interval = 100;
     int counter = 0;
     while (1) {
         esp_task_wdt_reset();
-//        if (exists_in_nvs("reading_interval")) {
-//            read_int_from_nvs("reading_interval", &reading_interval);
-//            printf("Reading interval: %d", reading_interval);
-//        }
+        read_int_from_nvs("push_int", &push_interval);
+        read_int_from_nvs("reading_int", &reading_interval);
 
         cJSON *root = cJSON_CreateObject();
         time_t now;

@@ -137,6 +137,11 @@ esp_err_t read_int_from_nvs(const char *key, int32_t *value)
     }
 
     ret = nvs_get_i32(nvs, key, value);
+    if (ret != ESP_OK)
+    {
+        printf(ret);
+        return ret;
+    }
 
     nvs_close(nvs);
     return ret;

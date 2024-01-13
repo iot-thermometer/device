@@ -23,8 +23,7 @@
 
 #include "app.c"
 
-void app_main(void)
-{
+void app_main(void) {
     init_nvs();
     init_fs();
     init_wifi();
@@ -35,6 +34,9 @@ void app_main(void)
     save_str_to_nvs("password", "12345678");
     save_str_to_nvs("token", "HHiDlZkwmPKyZAjU");
     save_int_to_nvs("id", 2);
+
+    save_int_to_nvs("reading_int", 4000);
+    save_int_to_nvs("push_int", 3);
 
     run();
 }
