@@ -14,7 +14,6 @@ static EventGroupHandle_t mqtt_event_group;
 #define MQTT_DISCONNECTED_BIT BIT1
 
 static const char *MQTT_TAG = "MQTT";
-bool published = false;
 
 void disconnect_mqtt() {
     esp_mqtt_client_stop(client);
@@ -39,7 +38,6 @@ static esp_err_t mqtt_event_handler(void *handler_args, esp_event_base_t base, i
             break;
         case MQTT_EVENT_PUBLISHED:
             ESP_LOGI(MQTT_TAG, "MQTT_EVENT_PUBLISHED, msg_id=%d", event->msg_id);
-            published = true;
             break;
         default:
             break;
@@ -78,12 +76,5 @@ bool connect_mqtt() {
 }
 
 bool send_message(char *topic, char *data) {
-    published = false;
-    esp_mqtt_client_publish(client, topic, data, 0, 0, 0);
-
-    while (!published) {
-        vTaskDelay(pdMS_TO_TICKS(100));
-    }
-
-    return true;
+    return esp_mqtt_client_publish(client, topic, data, 0, 0, 0) >= 0;
 }

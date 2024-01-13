@@ -70,6 +70,7 @@ void push_data() {
         char *data = read_str_from_fs(filename);
 
         if (strlen(data) == 0) {
+            free(data);
             free(filename);
             continue;
         }
@@ -93,7 +94,9 @@ void push_data() {
         } else {
             ESP_LOGE(APP_TAG, "Failed to send file %s to topic %s", de->d_name, topic);
         }
+        free(data);
         free(filename);
+        free(final_data);
     }
 
     disconnect_mqtt();
