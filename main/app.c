@@ -134,51 +134,55 @@ void main_loop() {
         float temperature = esp_random();
         float soil_moisture = esp_random();
 
-        if (time(&now) > 10000) {
-            int id;
-            read_int_from_nvs("id", &id);
-            if (temperature_valid) {
+        if (count_files() < 1000) {
+            if (time(&now) > 10000) {
+                int id;
+                read_int_from_nvs("id", &id);
+                if (temperature_valid) {
 
-                cJSON *temperature_payload = cJSON_CreateObject();
-                cJSON_AddNumberToObject(temperature_payload, "device_id", id);
-                cJSON_AddStringToObject(temperature_payload, "type", "TEMPERATURE");
-                cJSON_AddNumberToObject(temperature_payload, "value", temperature);
-                cJSON_AddNumberToObject(temperature_payload, "time", time(&now));
-                char *marshaled_temperature_payload = cJSON_PrintUnformatted(temperature_payload);
-                char *encrypted_temperature_payload = encrypt_text(marshaled_temperature_payload, token);
-                cJSON_Delete(temperature_payload);
-                char *temperature_filename = (char *) malloc(40 * sizeof(char));
-                sprintf(temperature_filename, "/spiffs/%d.TEMP", (int) esp_random());
-                save_str_to_fs(temperature_filename, encrypted_temperature_payload);
-                free(encrypted_temperature_payload);
+                    cJSON *temperature_payload = cJSON_CreateObject();
+                    cJSON_AddNumberToObject(temperature_payload, "device_id", id);
+                    cJSON_AddStringToObject(temperature_payload, "type", "TEMPERATURE");
+                    cJSON_AddNumberToObject(temperature_payload, "value", temperature);
+                    cJSON_AddNumberToObject(temperature_payload, "time", time(&now));
+                    char *marshaled_temperature_payload = cJSON_PrintUnformatted(temperature_payload);
+                    char *encrypted_temperature_payload = encrypt_text(marshaled_temperature_payload, token);
+                    cJSON_Delete(temperature_payload);
+                    char *temperature_filename = (char *) malloc(40 * sizeof(char));
+                    sprintf(temperature_filename, "/spiffs/%d.TEMP", (int) esp_random());
+                    save_str_to_fs(temperature_filename, encrypted_temperature_payload);
+                    free(encrypted_temperature_payload);
 
-                ESP_LOGI(APP_TAG, "[%d] Temperature is %f | File: %s", push_interval - counter, temperature,
-                         temperature_filename);
+                    ESP_LOGI(APP_TAG, "[%d] Temperature is %f | File: %s", push_interval - counter, temperature,
+                             temperature_filename);
+                } else {
+                    ESP_LOGW(APP_TAG, "Reading temperature was incorrect, skipping saving onto device");
+                }
+
+                if (soil_moisture_valid) {
+                    cJSON *soil_moisture_payload = cJSON_CreateObject();
+                    cJSON_AddNumberToObject(soil_moisture_payload, "device_id", id);
+                    cJSON_AddStringToObject(soil_moisture_payload, "type", "SOIL_MOISTURE");
+                    cJSON_AddNumberToObject(soil_moisture_payload, "value", soil_moisture);
+                    cJSON_AddNumberToObject(soil_moisture_payload, "time", time(&now));
+                    char *marshaled_soil_moisture_payload = cJSON_PrintUnformatted(soil_moisture_payload);
+                    char *encrypted_soil_moisture_payload = encrypt_text(marshaled_soil_moisture_payload, token);
+                    cJSON_Delete(soil_moisture_payload);
+                    char *soil_moisture_filename = (char *) malloc(40 * sizeof(char));
+                    sprintf(soil_moisture_filename, "/spiffs/%d.SOIL", (int) esp_random());
+                    save_str_to_fs(soil_moisture_filename, encrypted_soil_moisture_payload);
+                    free(encrypted_soil_moisture_payload);
+
+                    ESP_LOGI(APP_TAG, "[%d] Soil moisture is %f | File: %s", push_interval - counter, soil_moisture,
+                             soil_moisture_filename);
+                } else {
+                    ESP_LOGW(APP_TAG, "Reading soil moisture was incorrect, skipping saving onto device");
+                }
             } else {
-                ESP_LOGW(APP_TAG, "Reading temperature was incorrect, skipping saving onto device");
-            }
-
-            if (soil_moisture_valid) {
-                cJSON *soil_moisture_payload = cJSON_CreateObject();
-                cJSON_AddNumberToObject(soil_moisture_payload, "device_id", id);
-                cJSON_AddStringToObject(soil_moisture_payload, "type", "SOIL_MOISTURE");
-                cJSON_AddNumberToObject(soil_moisture_payload, "value", soil_moisture);
-                cJSON_AddNumberToObject(soil_moisture_payload, "time", time(&now));
-                char *marshaled_soil_moisture_payload = cJSON_PrintUnformatted(soil_moisture_payload);
-                char *encrypted_soil_moisture_payload = encrypt_text(marshaled_soil_moisture_payload, token);
-                cJSON_Delete(soil_moisture_payload);
-                char *soil_moisture_filename = (char *) malloc(40 * sizeof(char));
-                sprintf(soil_moisture_filename, "/spiffs/%d.SOIL", (int) esp_random());
-                save_str_to_fs(soil_moisture_filename, encrypted_soil_moisture_payload);
-                free(encrypted_soil_moisture_payload);
-
-                ESP_LOGI(APP_TAG, "[%d] Soil moisture is %f | File: %s", push_interval - counter, soil_moisture,
-                         soil_moisture_filename);
-            } else {
-                ESP_LOGW(APP_TAG, "Reading soil moisture was incorrect, skipping saving onto device");
+                ESP_LOGW(APP_TAG, "Device need at least once connect to Wifi to obtain time. Skipping reading.");
             }
         } else {
-            ESP_LOGW(APP_TAG, "Device need at least once connect to Wifi to obtain time. Skipping reading.");
+            ESP_LOGW(APP_TAG, "Disk overflow. Please connect to Wifi with accessible broker or reset device");
         }
         ESP_LOGD(APP_TAG, "Memory: %d", (int) esp_get_free_heap_size());
 
