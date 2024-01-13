@@ -17,6 +17,7 @@
 #define MAX_HTTP_RECV_BUFFER 512
 #define MAX_HTTP_OUTPUT_BUFFER 2048
 
+static const char *HTTP_TAG = "HTTP";
 static EventGroupHandle_t http_event_group;
 static char *result = "";
 
@@ -81,7 +82,6 @@ char *make_http_request(const char *url) {
     };
     esp_http_client_handle_t client = esp_http_client_init(&config);
     esp_http_client_perform(client);
-
     xEventGroupWaitBits(http_event_group,
                         HTTP_BIT,
                         pdFALSE,
