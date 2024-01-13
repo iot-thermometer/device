@@ -62,8 +62,10 @@ esp_err_t _http_event_handler(esp_http_client_event_t *evt) {
         case HTTP_EVENT_ON_FINISH:
             if (output_buffer != NULL) {
 //                printf("%s\n", output_buffer);
-                if (result != NULL)
+                if (result != NULL) {
                     free(result);
+                    result = NULL;
+                }
                 result = (char *) malloc(output_len);
                 strncpy(result, output_buffer, output_len);
                 result[output_len] = '\0';
@@ -86,15 +88,26 @@ char *make_http_request(const char *url) {
             .event_handler = _http_event_handler,
     };
     esp_http_client_handle_t client = esp_http_client_init(&config);
-    esp_http_client_perform(client);
-    xEventGroupWaitBits(http_event_group,
-                        HTTP_BIT,
-                        pdFALSE,
-                        pdFALSE,
-                        portMAX_DELAY);
+    esp_err_t err = esp_http_client_perform(client);
+    if (err == ESP_OK) {
+        xEventGroupWaitBits(http_event_group,
+                            HTTP_BIT,
+                            pdFALSE,
+                            pdFALSE,
+                            portMAX_DELAY);
 
-    esp_http_client_cleanup(client);
-    vEventGroupDelete(http_event_group);
-
-    return result;
+        esp_http_client_cleanup(client);
+        vEventGroupDelete(http_event_group);
+        return result;
+    } else {
+        if (result != NULL) {
+            free(result);
+            result = NULL;
+        }
+        result = (char *) malloc(1);
+        result[0] = '\0';
+        esp_http_client_cleanup(client);
+        vEventGroupDelete(http_event_group);
+        return result;
+    }
 }

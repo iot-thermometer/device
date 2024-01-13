@@ -11,20 +11,34 @@ void parse_remote_config(const char *json) {
         }
     }
 
-    int reading_interval = cJSON_GetObjectItem(root, "reading_interval")->valueint;
-    int push_interval = cJSON_GetObjectItem(root, "push_interval")->valueint;
+    if (cJSON_HasObjectItem(root, "ReadingInterval")) {
+        int reading_interval = cJSON_GetObjectItem(root, "ReadingInterval")->valueint;
+        int push_interval = cJSON_GetObjectItem(root, "PushInterval")->valueint;
 
-    ESP_LOGI(CONFIG_TAG, "Setting reading interval: %d", reading_interval);
-    ESP_LOGI(CONFIG_TAG, "Setting push interval: %d", push_interval);
-    save_int_to_nvs("reading_interval", reading_interval);
-    save_int_to_nvs("push_interval", push_interval);
+        ESP_LOGI(CONFIG_TAG, "Setting reading interval: %d", reading_interval);
+        ESP_LOGI(CONFIG_TAG, "Setting push interval: %d", push_interval);
+        save_int_to_nvs("reading_int", reading_interval);
+        save_int_to_nvs("push_int", push_interval);
+    } else {
+        ESP_LOGE(CONFIG_TAG, "Config message is invalid");
+    }
 
     cJSON_Delete(root);
 }
 
 void pull_config() {
-    const char *json = make_http_request(
-            "https://gist.githubusercontent.com/matisiekpl/cd086500b92dfa3b0493aa6f518ad5b7/raw/9848b277efde3ef75485a088b24e3ee188d6a1b7/device.json");
-    printf("CONFIG JSON: %s", json);
-    // parse_remote_config(json);
+    char token[20];
+    read_str_from_nvs("token", token, 19);
+    char *url = malloc(512 * sizeof(char));
+    sprintf(url, "http://srv3.enteam.pl:3009/api/iot/%s/config", token);
+    ESP_LOGI(CONFIG_TAG, "Fetching config from %s", url);
+
+    const char *json = make_http_request(url);
+    if (strlen(json) > 0) {
+        ESP_LOGD(CONFIG_TAG, "CONFIG: %s", json);
+        parse_remote_config(json);
+    } else {
+        ESP_LOGE(CONFIG_TAG, "Error fetching config");
+    }
+    free(url);
 }

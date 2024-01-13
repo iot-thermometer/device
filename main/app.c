@@ -1,4 +1,4 @@
-#define WDT_TIMEOUT 10000
+#define WDT_TIMEOUT 10000000
 
 static const char *APP_TAG = "APP";
 
@@ -115,7 +115,7 @@ void main_loop() {
     xTaskCreate(push_data, "push_data", 32768, NULL, 10, NULL);
 
     while (1) {
-        esp_task_wdt_reset();
+//        esp_task_wdt_reset();
         read_int_from_nvs("push_int", &push_interval);
         read_int_from_nvs("reading_int", &reading_interval);
 
@@ -189,13 +189,13 @@ void main_loop() {
 
 void run() {
     if (exists_in_nvs("ssid")) {
-        esp_task_wdt_config_t twdt_config = {
-                .timeout_ms = WDT_TIMEOUT,
-                .idle_core_mask = (1 << portNUM_PROCESSORS) - 1,
-                .trigger_panic = false,
-        };
-        esp_task_wdt_init(&twdt_config);
-        esp_task_wdt_add(NULL);
+//        esp_task_wdt_config_t twdt_config = {
+//                .timeout_ms = WDT_TIMEOUT,
+//                .idle_core_mask = (1 << portNUM_PROCESSORS) - 1,
+//                .trigger_panic = false,
+//        };
+//        esp_task_wdt_init(&twdt_config);
+//        esp_task_wdt_add(NULL);
         main_loop();
     } else {
         start_bluetooth();

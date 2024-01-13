@@ -6,7 +6,7 @@
 #include "esp_chip_info.h"
 #include "esp_flash.h"
 #include "esp_system.h"
-#include "esp_task_wdt.h"
+//#include "esp_task_wdt.h"
 #include "dirent.h"
 
 #include "storage.c"
@@ -32,11 +32,11 @@ void app_main(void) {
 
     save_str_to_nvs("ssid", "iPhone (Mateusz)");
     save_str_to_nvs("password", "12345678");
-    save_str_to_nvs("token", "HHiDlZkwmPKyZAjU");
-    save_int_to_nvs("id", 2);
+    save_str_to_nvs("token", "grWUXyuIxLoBZrkv");
+    save_int_to_nvs("id", 66);
 
-    save_int_to_nvs("reading_int", 4000);
-    save_int_to_nvs("push_int", 3);
+    save_int_to_nvs("reading_int", 5000);
+    save_int_to_nvs("push_int", 10);
 
     run();
 }
