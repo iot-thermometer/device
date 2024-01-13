@@ -65,7 +65,10 @@ void push_data() {
         char *data = read_str_from_fs(filename);
 
         if (strlen(data) == 0)
+        {
+            free(filename);
             continue;
+        }
 
         char *final_data = (char *) malloc((strlen(data)) * sizeof(char) + 17);
         sprintf(final_data, "%d;%s", id, data);
@@ -86,6 +89,7 @@ void push_data() {
         } else {
             ESP_LOGE(APP_TAG, "Failed to send file %s to topic %s", de->d_name, topic);
         }
+        free(filename);
     }
 
     disconnect_mqtt();
@@ -134,6 +138,7 @@ void main_loop() {
                 char *temperature_filename = (char *) malloc(40 * sizeof(char));
                 sprintf(temperature_filename, "/spiffs/%d.TEMP", (int) esp_random());
                 save_str_to_fs(temperature_filename, encrypted_temperature_payload);
+                free(encrypted_temperature_payload);
 
                 ESP_LOGI(APP_TAG, "[%d] Temperature is %f | File: %s", push_interval - counter, temperature,
                          temperature_filename);
@@ -153,6 +158,7 @@ void main_loop() {
                 char *soil_moisture_filename = (char *) malloc(40 * sizeof(char));
                 sprintf(soil_moisture_filename, "/spiffs/%d.SOIL", (int) esp_random());
                 save_str_to_fs(soil_moisture_filename, encrypted_soil_moisture_payload);
+                free(encrypted_soil_moisture_payload);
 
                 ESP_LOGI(APP_TAG, "[%d] Soil moisture is %f | File: %s", push_interval - counter, soil_moisture,
                          soil_moisture_filename);
@@ -162,6 +168,7 @@ void main_loop() {
         } else {
             ESP_LOGW(APP_TAG, "Device need at least once connect to Wifi to obtain time. Skipping reading.");
         }
+        ESP_LOGI(APP_TAG, "Memory: %d", (int) esp_get_free_heap_size());
 
         if (counter == push_interval) {
             counter = 0;

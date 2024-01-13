@@ -19,7 +19,7 @@
 
 static const char *HTTP_TAG = "HTTP";
 static EventGroupHandle_t http_event_group;
-static char *result = "";
+static char *result = NULL;
 
 #define HTTP_BIT BIT0
 
@@ -27,6 +27,9 @@ esp_err_t _http_event_handler(esp_http_client_event_t *evt) {
     static char *output_buffer;
     static int output_len;
     switch (evt->event_id) {
+        case HTTP_EVENT_ERROR:
+            ESP_LOGD("XXX", "HTTP_EVENT_ERROR: X");
+            break;
         case HTTP_EVENT_ON_DATA:
             if (output_len == 0 && evt->user_data) {
                 memset(evt->user_data, 0, MAX_HTTP_OUTPUT_BUFFER);
@@ -59,6 +62,8 @@ esp_err_t _http_event_handler(esp_http_client_event_t *evt) {
         case HTTP_EVENT_ON_FINISH:
             if (output_buffer != NULL) {
 //                printf("%s\n", output_buffer);
+                if (result != NULL)
+                    free(result);
                 result = (char *) malloc(output_len);
                 strncpy(result, output_buffer, output_len);
                 result[output_len] = '\0';

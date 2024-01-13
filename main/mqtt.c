@@ -3,7 +3,6 @@
 #include "mqtt_client.h"
 
 #define MQTT_BROKER_URI "mqtt://srv3.enteam.pl:1883"
-#define MQTT_TOPIC_PREFIX "sensors"
 #define MQTT_USERNAME ""
 #define MQTT_PASSWORD ""
 
