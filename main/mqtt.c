@@ -14,18 +14,20 @@ static EventGroupHandle_t mqtt_event_group;
 #define MQTT_CONNECTED_BIT BIT0
 #define MQTT_DISCONNECTED_BIT BIT1
 
+static const char* MQTT_TAG = "MQTT";
+
 static esp_err_t mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_t event_id, void *event_data)
 {
     esp_mqtt_event_handle_t event = event_data;
-    ESP_LOGD("", "Event: %d", event->event_id);
+    ESP_LOGD(MQTT_TAG, "Event: %d", event->event_id);
     switch (event->event_id)
     {
     case MQTT_EVENT_CONNECTED:
-        ESP_LOGI("", "MQTT_EVENT_CONNECTED");
+        ESP_LOGI(MQTT_TAG, "Connected");
         xEventGroupSetBits(mqtt_event_group, MQTT_CONNECTED_BIT);
         break;
     case MQTT_EVENT_DISCONNECTED:
-        ESP_LOGI("", "MQTT_EVENT_DISCONNECTED");
+        ESP_LOGI(MQTT_TAG, "Closed");
         break;
     default:
         break;
@@ -38,7 +40,7 @@ void disconnect_mqtt()
     esp_mqtt_client_stop(client);
     esp_mqtt_client_destroy(client);
 
-    printf("Disconnected from mqtt\n");
+    ESP_LOGI(MQTT_TAG, "Disconnected");
     vTaskDelay(pdMS_TO_TICKS(1000));
 }
 
@@ -63,12 +65,10 @@ bool connect_mqtt()
 
     if (bits & MQTT_CONNECTED_BIT)
     {
-        ESP_LOGI("", "connected to mqtt");
         return true;
     }
     else if (bits & MQTT_DISCONNECTED_BIT)
     {
-        ESP_LOGI("", "failed to connect to mqtt");
         return false;
     }
     return false;

@@ -50,7 +50,7 @@ esp_err_t _ota_http_event_handler(esp_http_client_event_t *evt)
 void check_update()
 {
 
-    printf("Looking for a new firmware...\n");
+    printf("Looking for a new firmware...");
 
     // configure the esp_http_client
     esp_http_client_config_t config = {

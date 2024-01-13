@@ -127,7 +127,7 @@ esp_err_t save_int_to_nvs(const char *key, int value)
     return ret;
 }
 
-esp_err_t read_int_from_nvs(const char *key, int *value)
+esp_err_t read_int_from_nvs(const char *key, int32_t *value)
 {
     nvs_handle_t nvs;
     esp_err_t ret = nvs_open("iot", NVS_READONLY, &nvs);
