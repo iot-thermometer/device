@@ -26,14 +26,18 @@ void parse_remote_config(const char *json) {
     cJSON_Delete(root);
 }
 
+
+char token[20];
+
 void pull_config() {
-    char token[20];
     read_str_from_nvs("token", token, 19);
     char *url = malloc(512 * sizeof(char));
     sprintf(url, "http://srv3.enteam.pl:3009/api/iot/%s/config", token);
     ESP_LOGI(CONFIG_TAG, "Fetching config from %s", url);
 
-    const char *json = make_http_request(url);
+    char *json = malloc(512 * sizeof(char));
+    make_http_request(url, json);
+
     if (strlen(json) > 0) {
         ESP_LOGD(CONFIG_TAG, "CONFIG: %s", json);
         parse_remote_config(json);
@@ -41,4 +45,5 @@ void pull_config() {
         ESP_LOGE(CONFIG_TAG, "Error fetching config");
     }
     free(url);
+    free(json);
 }

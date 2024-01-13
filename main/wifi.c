@@ -60,11 +60,19 @@ void init_wifi() {
     esp_netif_create_default_wifi_sta();
     wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
     ESP_ERROR_CHECK(esp_wifi_init(&cfg));
+
+    wifi_event_group = xEventGroupCreate();
 }
+
+wifi_config_t wifi_config = {
+        .sta = {
+                .threshold.authmode = WIFI_AUTH_WPA2_PSK,
+        },
+};
 
 void connect_wifi(const char *ssid, const char *pass) {
     ESP_LOGI(WIFI_TAG, "Connecting to %s...", ssid);
-    wifi_event_group = xEventGroupCreate();
+//    wifi_event_group = xEventGroupCreate();
 
 
     ESP_ERROR_CHECK(esp_event_handler_instance_register(WIFI_EVENT,
@@ -78,11 +86,7 @@ void connect_wifi(const char *ssid, const char *pass) {
                                                         NULL,
                                                         &instance_got_ip));
 
-    wifi_config_t wifi_config = {
-            .sta = {
-                    .threshold.authmode = WIFI_AUTH_WPA2_PSK,
-            },
-    };
+
     strncpy((char *) wifi_config.sta.ssid, (char *) ssid, 32);
     strncpy((char *) wifi_config.sta.password, (char *) pass, 64);
     ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
@@ -100,7 +104,10 @@ void connect_wifi(const char *ssid, const char *pass) {
         ESP_ERROR_CHECK(esp_event_handler_instance_unregister(WIFI_EVENT, ESP_EVENT_ANY_ID, instance_any_id));
     }
 
-    vEventGroupDelete(wifi_event_group);
+    xEventGroupClearBits(wifi_event_group,WIFI_DISCONNECTED_BIT | WIFI_CONNECTED_BIT);
+//    vEventGroupDelete(wifi_event_group);
+//    if (wifi_event_group != NULL)
+//        free(wifi_event_group);
 
-    wifi_event_group = NULL;
+//    wifi_event_group = NULL;
 }

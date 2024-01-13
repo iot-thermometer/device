@@ -9,6 +9,7 @@
 //#include "esp_task_wdt.h"
 #include "dirent.h"
 #include "esp_sleep.h"
+#include "esp_heap_trace.h"
 
 #include "config.c"
 #include "storage.c"
@@ -25,11 +26,15 @@
 
 #include "app.c"
 
+static heap_trace_record_t trace_record[100];
+
 void app_main(void) {
+    ESP_ERROR_CHECK(heap_trace_init_standalone(trace_record, 100));
     ESP_LOGI("APP", "Firmware version: %f", FIRMWARE_VERSION);
     init_nvs();
     init_fs();
     init_wifi();
+    init_http();
     listen_for_reset();
     show_led();
 
@@ -40,9 +45,9 @@ void app_main(void) {
 
     if (!exists_in_nvs("reading_int")) {
         save_int_to_nvs("reading_int", 5000);
-        save_int_to_nvs("push_int", 10);
+        save_int_to_nvs("push_int", 1);
     }
-    save_bool_to_nvs("wifi_enabled",false);
+    save_bool_to_nvs("wifi_enabled", false);
 
     run();
 }

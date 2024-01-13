@@ -12,7 +12,8 @@
 static const char *FIRMWARE_TAG = "FIRMWARE";
 
 bool check_update() {
-    const char *json = make_http_request(firmwareUrl);
+    char *json = malloc(512 * sizeof(char));
+    make_http_request(firmwareUrl, json);
     if (strlen(json) > 0) {
         ESP_LOGD(FIRMWARE_TAG, "FIRMWARE: %s", json);
         cJSON *root = cJSON_Parse(json);
@@ -25,7 +26,7 @@ bool check_update() {
         if (cJSON_HasObjectItem(root, "version")) {
             double version = cJSON_GetObjectItem(root, "version")->valuedouble;
             char *file = cJSON_GetObjectItem(root, "file")->valuestring;
-
+            cJSON_Delete(root);
             if (version > FIRMWARE_VERSION) {
                 ESP_LOGI(FIRMWARE_TAG, "New firmware version is available. %f > %f", version, FIRMWARE_VERSION);
                 ESP_LOGI(FIRMWARE_TAG, "Performing automated OTA update...");
@@ -53,7 +54,9 @@ bool check_update() {
         }
         cJSON_Delete(root);
     } else {
+        free(json);
         ESP_LOGE(FIRMWARE_TAG, "Error fetching firmware message");
     }
+
     return false;
 }

@@ -18,12 +18,18 @@ void push_data() {
 
     ESP_LOGI(APP_TAG, "Attempting to push readings...");
 
+    printf("Heap free at start %d.\n", heap_caps_get_free_size(MALLOC_CAP_8BIT));
+
+//    ESP_ERROR_CHECK( heap_trace_start(HEAP_TRACE_LEAKS) );
     char ssid[33];
     char password[65];
     read_str_from_nvs("ssid", ssid, 32);
     read_str_from_nvs("password", password, 64);
     save_bool_to_nvs("wifi_enabled", true);
+
     connect_wifi(ssid, password);
+//    ESP_ERROR_CHECK( heap_trace_stop() );
+//    heap_trace_dump();
 
     bool wifi_connected = false;
     read_bool_from_nvs("wifi_connected", &wifi_connected);
@@ -41,16 +47,20 @@ void push_data() {
         breaker++;
     }
     ESP_LOGI(APP_TAG, "Device is online!");
-
-    bool ota_status = check_update();
-    if (!ota_status) {
-        ESP_LOGE(APP_TAG,
-                 "MQTT broker is unavailable. Contact manufacturer status website to ensure broker is online.");
-        disconnect_wifi();
-        vTaskDelete(NULL);
-    }
+//
+//    ESP_ERROR_CHECK( heap_trace_start(HEAP_TRACE_LEAKS) );
+//    bool ota_status = check_update();
+//    if (!ota_status) {
+//        ESP_LOGE(APP_TAG,
+//                 "MQTT broker is unavailable. Contact manufacturer status website to ensure broker is online.");
+//        disconnect_wifi();
+//        vTaskDelete(NULL);
+//    }
+//    ESP_ERROR_CHECK( heap_trace_stop() );
+//    heap_trace_dump();
 
     pull_config();
+
 
     obtain_time();
     bool mqtt_connected = connect_mqtt();
@@ -123,7 +133,7 @@ void main_loop() {
     int push_interval = 100;
     int counter = 0;
 
-    xTaskCreate(push_data, "push_data", 32768, NULL, 10, NULL);
+//    xTaskCreate(push_data, "push_data", 32768, NULL, 10, NULL);
 
     while (1) {
 //        esp_task_wdt_reset();

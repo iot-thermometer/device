@@ -19,7 +19,7 @@
 
 static const char *HTTP_TAG = "HTTP";
 static EventGroupHandle_t http_event_group;
-static char *result = NULL;
+static char result[512];
 
 #define HTTP_BIT BIT0
 
@@ -27,6 +27,15 @@ esp_err_t _http_event_handler(esp_http_client_event_t *evt) {
     static char *output_buffer;
     static int output_len;
     switch (evt->event_id) {
+        case HTTP_EVENT_DISCONNECTED:
+            int mbedtls_err = 0;
+            esp_err_t err = esp_tls_get_and_clear_last_error((esp_tls_error_handle_t) evt->data, &mbedtls_err, NULL);
+            if (output_buffer != NULL) {
+                free(output_buffer);
+                output_buffer = NULL;
+            }
+            output_len = 0;
+            break;
         case HTTP_EVENT_ERROR:
             ESP_LOGD("XXX", "HTTP_EVENT_ERROR: X");
             break;
@@ -62,11 +71,11 @@ esp_err_t _http_event_handler(esp_http_client_event_t *evt) {
         case HTTP_EVENT_ON_FINISH:
             if (output_buffer != NULL) {
 //                printf("%s\n", output_buffer);
-                if (result != NULL) {
-                    free(result);
-                    result = NULL;
-                }
-                result = (char *) malloc(output_len);
+//                if (result != NULL) {
+//                    free(result);
+//                    result = NULL;
+//                }
+//                result = (char *) malloc(output_len);
                 strncpy(result, output_buffer, output_len);
                 result[output_len] = '\0';
                 free(output_buffer);
@@ -81,8 +90,12 @@ esp_err_t _http_event_handler(esp_http_client_event_t *evt) {
     return ESP_OK;
 }
 
-char *make_http_request(const char *url) {
+void init_http() {
     http_event_group = xEventGroupCreate();
+}
+
+void make_http_request(const char *url, char *out) {
+//    http_event_group = xEventGroupCreate();
     esp_http_client_config_t config = {
             .url = url,
             .event_handler = _http_event_handler,
@@ -97,17 +110,19 @@ char *make_http_request(const char *url) {
                             portMAX_DELAY);
 
         esp_http_client_cleanup(client);
-        vEventGroupDelete(http_event_group);
-        return result;
+//        vEventGroupDelete(http_event_group);
+//        free(http_event_group);
+        strcpy(out, result);
     } else {
-        if (result != NULL) {
-            free(result);
-            result = NULL;
-        }
-        result = (char *) malloc(1);
+//        if (result != NULL) {
+//            free(result);
+//            result = NULL;
+//        }
         result[0] = '\0';
         esp_http_client_cleanup(client);
-        vEventGroupDelete(http_event_group);
-        return result;
+//        vEventGroupDelete(http_event_group);
+//        free(http_event_group);
+        strcpy(out, result);
     }
+    xEventGroupClearBits(http_event_group, HTTP_BIT);
 }
