@@ -72,8 +72,6 @@ wifi_config_t wifi_config = {
 
 void connect_wifi(const char *ssid, const char *pass) {
     ESP_LOGI(WIFI_TAG, "Connecting to %s...", ssid);
-//    wifi_event_group = xEventGroupCreate();
-
 
     ESP_ERROR_CHECK(esp_event_handler_instance_register(WIFI_EVENT,
                                                         ESP_EVENT_ANY_ID,
@@ -105,9 +103,4 @@ void connect_wifi(const char *ssid, const char *pass) {
     }
 
     xEventGroupClearBits(wifi_event_group,WIFI_DISCONNECTED_BIT | WIFI_CONNECTED_BIT);
-//    vEventGroupDelete(wifi_event_group);
-//    if (wifi_event_group != NULL)
-//        free(wifi_event_group);
-
-//    wifi_event_group = NULL;
 }

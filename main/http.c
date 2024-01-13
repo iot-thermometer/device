@@ -95,7 +95,6 @@ void init_http() {
 }
 
 void make_http_request(const char *url, char *out) {
-//    http_event_group = xEventGroupCreate();
     esp_http_client_config_t config = {
             .url = url,
             .event_handler = _http_event_handler,
@@ -110,18 +109,10 @@ void make_http_request(const char *url, char *out) {
                             portMAX_DELAY);
 
         esp_http_client_cleanup(client);
-//        vEventGroupDelete(http_event_group);
-//        free(http_event_group);
         strcpy(out, result);
     } else {
-//        if (result != NULL) {
-//            free(result);
-//            result = NULL;
-//        }
         result[0] = '\0';
         esp_http_client_cleanup(client);
-//        vEventGroupDelete(http_event_group);
-//        free(http_event_group);
         strcpy(out, result);
     }
     xEventGroupClearBits(http_event_group, HTTP_BIT);

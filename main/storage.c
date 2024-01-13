@@ -205,5 +205,6 @@ int count_files() {
             break;
         count++;
     }
+    closedir(dir);
     return count;
 }

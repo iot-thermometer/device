@@ -17,6 +17,7 @@ bool check_update() {
     if (strlen(json) > 0) {
         ESP_LOGD(FIRMWARE_TAG, "FIRMWARE: %s", json);
         cJSON *root = cJSON_Parse(json);
+        free(json);
         if (root == NULL) {
             const char *error_ptr = cJSON_GetErrorPtr();
             if (error_ptr != NULL) {

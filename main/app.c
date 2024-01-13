@@ -17,10 +17,8 @@ void push_data() {
     }
 
     ESP_LOGI(APP_TAG, "Attempting to push readings...");
+    ESP_LOGI("MEM", "Heap: %d", heap_caps_get_free_size(MALLOC_CAP_8BIT));
 
-    printf("Heap free at start %d.\n", heap_caps_get_free_size(MALLOC_CAP_8BIT));
-
-//    ESP_ERROR_CHECK( heap_trace_start(HEAP_TRACE_LEAKS) );
     char ssid[33];
     char password[65];
     read_str_from_nvs("ssid", ssid, 32);
@@ -28,8 +26,6 @@ void push_data() {
     save_bool_to_nvs("wifi_enabled", true);
 
     connect_wifi(ssid, password);
-//    ESP_ERROR_CHECK( heap_trace_stop() );
-//    heap_trace_dump();
 
     bool wifi_connected = false;
     read_bool_from_nvs("wifi_connected", &wifi_connected);
@@ -47,17 +43,13 @@ void push_data() {
         breaker++;
     }
     ESP_LOGI(APP_TAG, "Device is online!");
-//
-//    ESP_ERROR_CHECK( heap_trace_start(HEAP_TRACE_LEAKS) );
-//    bool ota_status = check_update();
-//    if (!ota_status) {
-//        ESP_LOGE(APP_TAG,
-//                 "MQTT broker is unavailable. Contact manufacturer status website to ensure broker is online.");
-//        disconnect_wifi();
-//        vTaskDelete(NULL);
-//    }
-//    ESP_ERROR_CHECK( heap_trace_stop() );
-//    heap_trace_dump();
+
+    bool ota_status = check_update();
+    if (!ota_status) {
+        ESP_LOGE(APP_TAG, "OTA failed. Contact manufacturer status website to ensure firmware server is online.");
+        disconnect_wifi();
+        vTaskDelete(NULL);
+    }
 
     pull_config();
 
@@ -133,7 +125,8 @@ void main_loop() {
     int push_interval = 100;
     int counter = 0;
 
-//    xTaskCreate(push_data, "push_data", 32768, NULL, 10, NULL);
+    char token[20];
+    read_str_from_nvs("token", token, 19);
 
     while (1) {
 //        esp_task_wdt_reset();
@@ -142,8 +135,6 @@ void main_loop() {
 
         time_t now;
         time(&now);
-        char token[20];
-        read_str_from_nvs("token", token, 19);
 
         bool temperature_valid = true;
         bool soil_moisture_valid = true;
@@ -164,9 +155,10 @@ void main_loop() {
                     char *marshaled_temperature_payload = cJSON_PrintUnformatted(temperature_payload);
                     char *encrypted_temperature_payload = encrypt_text(marshaled_temperature_payload, token);
                     cJSON_Delete(temperature_payload);
-                    char *temperature_filename = (char *) malloc(40 * sizeof(char));
+                    char temperature_filename[40];
                     sprintf(temperature_filename, "/spiffs/%d.TEMP", (int) esp_random());
                     save_str_to_fs(temperature_filename, encrypted_temperature_payload);
+                    free(marshaled_temperature_payload);
                     free(encrypted_temperature_payload);
 
                     ESP_LOGI(APP_TAG, "[%d] Temperature is %f | File: %s", push_interval - counter, temperature,
@@ -184,9 +176,10 @@ void main_loop() {
                     char *marshaled_soil_moisture_payload = cJSON_PrintUnformatted(soil_moisture_payload);
                     char *encrypted_soil_moisture_payload = encrypt_text(marshaled_soil_moisture_payload, token);
                     cJSON_Delete(soil_moisture_payload);
-                    char *soil_moisture_filename = (char *) malloc(40 * sizeof(char));
+                    char soil_moisture_filename[40];
                     sprintf(soil_moisture_filename, "/spiffs/%d.SOIL", (int) esp_random());
                     save_str_to_fs(soil_moisture_filename, encrypted_soil_moisture_payload);
+                    free(marshaled_soil_moisture_payload);
                     free(encrypted_soil_moisture_payload);
 
                     ESP_LOGI(APP_TAG, "[%d] Soil moisture is %f | File: %s", push_interval - counter, soil_moisture,
@@ -200,11 +193,11 @@ void main_loop() {
         } else {
             ESP_LOGW(APP_TAG, "Disk overflow. Please connect to Wifi with accessible broker or reset device");
         }
-        ESP_LOGD(APP_TAG, "Memory: %d", (int) esp_get_free_heap_size());
+        ESP_LOGI("MEM", "Memory: %d", (int) esp_get_free_heap_size());
 
         if (counter == push_interval) {
             counter = 0;
-            xTaskCreate(push_data, "push_data", 32768, NULL, 10, NULL);
+//            xTaskCreate(push_data, "push_data", 32768, NULL, 10, NULL);
         }
 
         counter++;
