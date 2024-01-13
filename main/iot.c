@@ -26,6 +26,7 @@
 #include "app.c"
 
 void app_main(void) {
+    ESP_LOGI("APP", "Firmware version: %f", FIRMWARE_VERSION);
     init_nvs();
     init_fs();
     init_wifi();
@@ -37,8 +38,11 @@ void app_main(void) {
     save_str_to_nvs("token", "grWUXyuIxLoBZrkv");
     save_int_to_nvs("id", 66);
 
-    save_int_to_nvs("reading_int", 5000);
-    save_int_to_nvs("push_int", 10);
+    if (!exists_in_nvs("reading_int")) {
+        save_int_to_nvs("reading_int", 5000);
+        save_int_to_nvs("push_int", 10);
+    }
+    save_bool_to_nvs("wifi_enabled",false);
 
     run();
 }

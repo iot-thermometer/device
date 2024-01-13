@@ -42,7 +42,14 @@ void push_data() {
     }
     ESP_LOGI(APP_TAG, "Device is online!");
 
-    check_update();
+    bool ota_status = check_update();
+    if (!ota_status) {
+        ESP_LOGE(APP_TAG,
+                 "MQTT broker is unavailable. Contact manufacturer status website to ensure broker is online.");
+        disconnect_wifi();
+        vTaskDelete(NULL);
+    }
+
     pull_config();
 
     obtain_time();
