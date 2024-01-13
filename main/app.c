@@ -2,6 +2,11 @@
 
 static const char *APP_TAG = "APP";
 
+void sleep_if_possible(int timeout) {
+    esp_sleep_enable_timer_wakeup(timeout * 1000);
+    esp_light_sleep_start();
+}
+
 void push_data() {
     bool wifi_enabled = false;
     read_bool_from_nvs("wifi_enabled", &wifi_enabled);
@@ -175,7 +180,7 @@ void main_loop() {
         } else {
             ESP_LOGW(APP_TAG, "Device need at least once connect to Wifi to obtain time. Skipping reading.");
         }
-        ESP_LOGI(APP_TAG, "Memory: %d", (int) esp_get_free_heap_size());
+        ESP_LOGD(APP_TAG, "Memory: %d", (int) esp_get_free_heap_size());
 
         if (counter == push_interval) {
             counter = 0;
@@ -183,7 +188,18 @@ void main_loop() {
         }
 
         counter++;
-        vTaskDelay(pdMS_TO_TICKS(reading_interval));
+
+        bool wifi_enabled = false;
+        read_bool_from_nvs("wifi_enabled", &wifi_enabled);
+        if (wifi_enabled) {
+            vTaskDelay(pdMS_TO_TICKS(reading_interval));
+        } else {
+            ESP_LOGI(APP_TAG, "Going to take nap (%d ms), good night", reading_interval);
+            vTaskDelay(pdMS_TO_TICKS(100));
+            sleep_if_possible(reading_interval);
+            ESP_LOGI(APP_TAG, "Odpowiedzialnosc to wstawac rano");
+        }
+
     }
 }
 
