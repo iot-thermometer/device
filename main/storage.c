@@ -166,18 +166,15 @@ void save_str_to_fs(char *filename, char *value) {
     fclose(f);
 }
 
-char *read_str_from_fs(char *filename) {
+void read_str_from_fs(char *filename, char *out) {
     FILE *f = fopen(filename, "r");
     fseek(f, 0, SEEK_END);
     long fsize = ftell(f);
     fseek(f, 0, SEEK_SET);
 
-    char *value = malloc(fsize + 1);
-    fread(value, fsize, 1, f);
+    fread(out, fsize, 1, f);
     fclose(f);
-    value[fsize] = '\0';
-
-    return value;
+    out[fsize] = '\0';
 }
 
 void init_fs() {

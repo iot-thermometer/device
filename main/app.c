@@ -8,16 +8,9 @@ void sleep_if_possible(int timeout) {
 }
 
 void push_data() {
-    bool wifi_enabled = false;
-    read_bool_from_nvs("wifi_enabled", &wifi_enabled);
-    if (wifi_enabled) {
-        ESP_LOGI(APP_TAG, "Aborting push, because another process is ongoing");
-        vTaskDelete(NULL);
-        return;
-    }
-
     ESP_LOGI(APP_TAG, "Attempting to push readings...");
-    ESP_LOGI("MEM", "Heap: %d", heap_caps_get_free_size(MALLOC_CAP_8BIT));
+//    ESP_LOGI("MEM", "Heap: %d", heap_caps_get_free_size(MALLOC_CAP_8BIT));
+    ESP_LOGI("MEM", "Memory before: %d", (int) esp_get_free_heap_size());
 
     char ssid[33];
     char password[65];
@@ -65,7 +58,6 @@ void push_data() {
     }
 
     DIR *dir;
-    struct dirent *ent;
     dir = opendir("/spiffs");
 
     int counter = 0;
@@ -78,17 +70,16 @@ void push_data() {
         if (!de)
             break;
 
-        char *filename = malloc(512 * sizeof(char));
+        char filename[360];
         sprintf(filename, "/spiffs/%s", de->d_name);
-        char *data = read_str_from_fs(filename);
+        char data[600];
+        read_str_from_fs(filename, data);
 
         if (strlen(data) == 0) {
-            free(data);
-            free(filename);
             continue;
         }
 
-        char *final_data = (char *) malloc((strlen(data)) * sizeof(char) + 17);
+        char final_data[700];
         sprintf(final_data, "%d;%s", id, data);
 
         char kind[5];
@@ -97,7 +88,7 @@ void push_data() {
         kind[2] = filename[strlen(filename) - 2];
         kind[1] = filename[strlen(filename) - 3];
         kind[0] = filename[strlen(filename) - 4];
-        char *topic = (char *) malloc((strlen(data)) * sizeof(char) + 17);
+        char topic[20];
         sprintf(topic, "%s/%d/%s", "sensors", id, kind);
         int send_result = send_message(topic, final_data);
         if (send_result) {
@@ -107,16 +98,14 @@ void push_data() {
         } else {
             ESP_LOGE(APP_TAG, "Failed to send file %s to topic %s", de->d_name, topic);
         }
-        free(data);
-        free(filename);
-        free(final_data);
     }
+    closedir(dir);
 
     disconnect_mqtt();
     ESP_LOGI(APP_TAG, "Data pushed!");
     save_bool_to_nvs("wifi_enabled", false);
     disconnect_wifi();
-
+    ESP_LOGI("MEM", "Memory after: %d", (int) esp_get_free_heap_size());
     vTaskDelete(NULL);
 }
 
@@ -193,11 +182,16 @@ void main_loop() {
         } else {
             ESP_LOGW(APP_TAG, "Disk overflow. Please connect to Wifi with accessible broker or reset device");
         }
-        ESP_LOGI("MEM", "Memory: %d", (int) esp_get_free_heap_size());
 
         if (counter == push_interval) {
             counter = 0;
-//            xTaskCreate(push_data, "push_data", 32768, NULL, 10, NULL);
+            bool wifi_enabled = false;
+            read_bool_from_nvs("wifi_enabled", &wifi_enabled);
+            if (wifi_enabled) {
+                ESP_LOGI(APP_TAG, "Aborting push, because another process is ongoing");
+            } else {
+                xTaskCreate(push_data, "push_data", 32768, NULL, 10, NULL);
+            }
         }
 
         counter++;

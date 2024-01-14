@@ -70,12 +70,6 @@ esp_err_t _http_event_handler(esp_http_client_event_t *evt) {
             break;
         case HTTP_EVENT_ON_FINISH:
             if (output_buffer != NULL) {
-//                printf("%s\n", output_buffer);
-//                if (result != NULL) {
-//                    free(result);
-//                    result = NULL;
-//                }
-//                result = (char *) malloc(output_len);
                 strncpy(result, output_buffer, output_len);
                 result[output_len] = '\0';
                 free(output_buffer);
@@ -94,11 +88,14 @@ void init_http() {
     http_event_group = xEventGroupCreate();
 }
 
-void make_http_request(const char *url, char *out) {
-    esp_http_client_config_t config = {
-            .url = url,
-            .event_handler = _http_event_handler,
-    };
+char blank_url[512];
+esp_http_client_config_t config = {
+        .url = blank_url,
+        .event_handler = _http_event_handler,
+};
+
+void make_http_request(char *url, char *out) {
+    strcpy((char *) config.url, url);
     esp_http_client_handle_t client = esp_http_client_init(&config);
     esp_err_t err = esp_http_client_perform(client);
     if (err == ESP_OK) {
@@ -107,13 +104,10 @@ void make_http_request(const char *url, char *out) {
                             pdFALSE,
                             pdFALSE,
                             portMAX_DELAY);
-
-        esp_http_client_cleanup(client);
-        strcpy(out, result);
     } else {
         result[0] = '\0';
-        esp_http_client_cleanup(client);
-        strcpy(out, result);
     }
+    esp_http_client_cleanup(client);
+    strcpy(out, result);
     xEventGroupClearBits(http_event_group, HTTP_BIT);
 }

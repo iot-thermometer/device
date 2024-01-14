@@ -26,11 +26,9 @@ void obtain_time(void) {
         time(&now);
         localtime_r(&now, &timeInfo);
         if (c > 10) {
-            break;
             return;
         }
         c++;
     }
-
     ESP_LOGI(TIME_TAG, "Time is set");
 }

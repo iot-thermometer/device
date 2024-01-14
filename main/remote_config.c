@@ -2,7 +2,7 @@
 
 static const char *CONFIG_TAG = "CONFIG";
 
-void parse_remote_config(const char *json) {
+void parse_remote_config(char *json) {
     cJSON *root = cJSON_Parse(json);
     if (root == NULL) {
         const char *error_ptr = cJSON_GetErrorPtr();
@@ -17,8 +17,8 @@ void parse_remote_config(const char *json) {
 
         ESP_LOGI(CONFIG_TAG, "Setting reading interval: %d", reading_interval);
         ESP_LOGI(CONFIG_TAG, "Setting push interval: %d", push_interval);
-        save_int_to_nvs("reading_int", reading_interval);
-        save_int_to_nvs("push_int", push_interval);
+//        save_int_to_nvs("reading_int", reading_interval);
+//        save_int_to_nvs("push_int", push_interval);
     } else {
         ESP_LOGE(CONFIG_TAG, "Config message is invalid");
     }
@@ -31,11 +31,11 @@ char token[20];
 
 void pull_config() {
     read_str_from_nvs("token", token, 19);
-    char *url = malloc(512 * sizeof(char));
+    char url[100];
     sprintf(url, "http://srv3.enteam.pl:3009/api/iot/%s/config", token);
     ESP_LOGI(CONFIG_TAG, "Fetching config from %s", url);
 
-    char *json = malloc(512 * sizeof(char));
+    char json[512];
     make_http_request(url, json);
 
     if (strlen(json) > 0) {
@@ -44,6 +44,4 @@ void pull_config() {
     } else {
         ESP_LOGE(CONFIG_TAG, "Error fetching config");
     }
-    free(url);
-    free(json);
 }

@@ -43,10 +43,10 @@ void app_main(void) {
     save_str_to_nvs("token", "grWUXyuIxLoBZrkv");
     save_int_to_nvs("id", 66);
 
-    if (!exists_in_nvs("reading_int")) {
-        save_int_to_nvs("reading_int", 5000);
-        save_int_to_nvs("push_int", 1);
-    }
+//    if (!exists_in_nvs("reading_int")) {
+    save_int_to_nvs("reading_int", 2000);
+    save_int_to_nvs("push_int", 1);
+//    }
     save_bool_to_nvs("wifi_enabled", false);
 
     run();
