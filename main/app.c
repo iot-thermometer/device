@@ -10,7 +10,7 @@ void sleep_if_possible(int timeout) {
 void push_data() {
     ESP_LOGI(APP_TAG, "Attempting to push readings...");
 //    ESP_LOGI("MEM", "Heap: %d", heap_caps_get_free_size(MALLOC_CAP_8BIT));
-    ESP_LOGI("MEM", "Memory before: %d", (int) esp_get_free_heap_size());
+    ESP_LOGI("MEM", "Memory: %d", (int) esp_get_free_heap_size());
 
     char ssid[33];
     char password[65];
@@ -105,7 +105,6 @@ void push_data() {
     ESP_LOGI(APP_TAG, "Data pushed!");
     save_bool_to_nvs("wifi_enabled", false);
     disconnect_wifi();
-    ESP_LOGI("MEM", "Memory after: %d", (int) esp_get_free_heap_size());
     vTaskDelete(NULL);
 }
 
