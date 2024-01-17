@@ -16,20 +16,6 @@
 #define DELAY_T1_US (800 + 100)
 #define DELAY_T2_US (1500 + 100)
 
-#define CHECK(x)                \
-    do                          \
-    {                           \
-        esp_err_t __;           \
-        if ((__ = x) != ESP_OK) \
-            return __;          \
-    } while (0)
-#define CHECK_ARG(VAL)                  \
-    do                                  \
-    {                                   \
-        if (!(VAL))                     \
-            return ESP_ERR_INVALID_ARG; \
-    } while (0)
-
 static esp_err_t read_reg_modbus(i2c_dev_t *dev, uint8_t reg, uint8_t len, uint8_t *buf) {
     uint8_t req[] = {MODBUS_READ, reg, len};
     uint8_t resp[len + 4];
@@ -90,7 +76,6 @@ static inline float convert_humidity(uint16_t raw) {
 }
 
 esp_err_t am2320_init_desc(i2c_dev_t *dev, i2c_port_t port, gpio_num_t sda_gpio, gpio_num_t scl_gpio) {
-//    CHECK_ARG(dev);
     dev->port = port;
     dev->addr = AM2320_I2C_ADDR;
     dev->cfg.sda_io_num = sda_gpio;
@@ -100,13 +85,9 @@ esp_err_t am2320_init_desc(i2c_dev_t *dev, i2c_port_t port, gpio_num_t sda_gpio,
 }
 
 esp_err_t am2320_get_rht(i2c_dev_t *dev, float *temperature, float *humidity) {
-//    CHECK_ARG(dev && (temperature || humidity));
-
     uint8_t buf[4] = {0xff, 0xff, 0xff, 0xff};
-//    CHECK(read_reg_modbus(dev, REG_RH_H, 4, buf));
-    read_reg_modbus(dev, REG_RH_H, 4, buf);
+    esp_err_t err = read_reg_modbus(dev, REG_RH_H, 4, buf);
     *humidity = convert_humidity(((uint16_t) buf[0] << 8) + buf[1]);
     *temperature = convert_temperature(((uint16_t) buf[2] << 8) + buf[3]);
-
     return ESP_OK;
 }
