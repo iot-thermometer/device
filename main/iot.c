@@ -10,6 +10,7 @@
 #include "dirent.h"
 #include "esp_sleep.h"
 #include "esp_heap_trace.h"
+#include "am2320.c"
 
 #include "config.c"
 #include "storage.c"
@@ -28,26 +29,44 @@
 
 static heap_trace_record_t trace_record[100];
 
-void app_main(void) {
-    ESP_ERROR_CHECK(heap_trace_init_standalone(trace_record, 100));
-    ESP_LOGI("APP", "Firmware version: %f", FIRMWARE_VERSION);
-    init_nvs();
-    init_fs();
-    init_wifi();
-    init_http();
-    listen_for_reset();
-    show_led();
-
-    save_str_to_nvs("ssid", "iPhone (Mateusz)");
-    save_str_to_nvs("password", "12345678");
-    save_str_to_nvs("token", "grWUXyuIxLoBZrkv");
-    save_int_to_nvs("id", 66);
-
+//void app_main(void) {
+//    ESP_ERROR_CHECK(i2cdev_init());
+//    ESP_ERROR_CHECK(heap_trace_init_standalone(trace_record, 100));
+//    ESP_LOGI("APP", "Firmware version: %f", FIRMWARE_VERSION);
+//    init_nvs();
+//    init_fs();
+//    init_wifi();
+//    init_http();
+//    listen_for_reset();
+//    show_led();
+//
+//    save_str_to_nvs("ssid", "iPhone (Mateusz)");
+//    save_str_to_nvs("password", "12345678");
+//    save_str_to_nvs("token", "grWUXyuIxLoBZrkv");
+//    save_int_to_nvs("id", 66);
+//
 //    if (!exists_in_nvs("reading_int")) {
-    save_int_to_nvs("reading_int", 2000);
-    save_int_to_nvs("push_int", 1);
+//    save_int_to_nvs("reading_int", 2000);
+//    save_int_to_nvs("push_int", 1);
 //    }
-    save_bool_to_nvs("wifi_enabled", false);
+//    save_bool_to_nvs("wifi_enabled", false);
+//
+//    run();
+//}
 
-    run();
+void app_main(void) {
+    ESP_ERROR_CHECK(i2cdev_init());
+    i2c_dev_t dev = {0};
+    ESP_ERROR_CHECK(am2320_init_desc(&dev, 0, 21, 22));
+    float temperature, humidity;
+
+    while (1) {
+        esp_err_t res = am2320_get_rht(&dev, &temperature, &humidity);
+        if (res == ESP_OK)
+            ESP_LOGI("", "Temperature: %.1f°C, Humidity: %.1f%%", temperature, humidity);
+        else
+            ESP_LOGE("", "Error reading data: %d (%s)", res, esp_err_to_name(res));
+
+        vTaskDelay(pdMS_TO_TICKS(500));
+    }
 }
