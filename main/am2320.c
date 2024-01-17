@@ -16,6 +16,8 @@
 #define DELAY_T1_US (800 + 100)
 #define DELAY_T2_US (1500 + 100)
 
+static const char *AM2320_TAG = "AM2320";
+
 static esp_err_t read_reg_modbus(i2c_dev_t *dev, uint8_t reg, uint8_t len, uint8_t *buf) {
     uint8_t req[] = {MODBUS_READ, reg, len};
     uint8_t resp[len + 4];
@@ -25,30 +27,30 @@ static esp_err_t read_reg_modbus(i2c_dev_t *dev, uint8_t reg, uint8_t len, uint8
 
     err = i2c_dev_probe(dev, I2C_DEV_READ);
     if (err == ESP_FAIL) {
-        ESP_LOGD(TAG, "i2c_dev_probe: %s", esp_err_to_name(err));
+        ESP_LOGD(AM2320_TAG, "i2c_dev_probe: %s", esp_err_to_name(err));
     }
     ets_delay_us(DELAY_T1_US);
 
     err = i2c_dev_write(dev, NULL, 0, req, sizeof(req));
     if (err != ESP_OK) {
-        ESP_LOGE(TAG, "i2c_dev_write(): %s", esp_err_to_name(err));
+        ESP_LOGE(AM2320_TAG, "i2c_dev_write(): %s", esp_err_to_name(err));
         goto fail;
     }
     ets_delay_us(DELAY_T2_US);
 
     err = i2c_dev_read(dev, NULL, 0, resp, sizeof(resp));
     if (err != ESP_OK) {
-        ESP_LOGE(TAG, "i2c_dev_read(): %s", esp_err_to_name(err));
+        ESP_LOGE(AM2320_TAG, "i2c_dev_read(): %s", esp_err_to_name(err));
         goto fail;
     }
 
     if (resp[0] != MODBUS_READ) {
-        ESP_LOGE(TAG, "nieprawidlowa odpowiedz MODBUS (%d != 0x03)", resp[0]);
+        ESP_LOGE(AM2320_TAG, "nieprawidlowa odpowiedz MODBUS (%d != 0x03)", resp[0]);
         err = ESP_ERR_INVALID_RESPONSE;
         goto fail;
     }
     if (resp[1] != len) {
-        ESP_LOGE(TAG, "nieprawidlowa dlugosc odpowiedzi MODBUS reply (%d != %d)", resp[1], len);
+        ESP_LOGE(AM2320_TAG, "nieprawidlowa dlugosc odpowiedzi MODBUS reply (%d != %d)", resp[1], len);
         err = ESP_ERR_INVALID_RESPONSE;
         goto fail;
     }
