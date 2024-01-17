@@ -18,6 +18,7 @@
 
 static const char *AM2320_TAG = "AM2320";
 
+// spec page 20
 static esp_err_t read_reg_modbus(i2c_dev_t *dev, uint8_t reg, uint8_t len, uint8_t *buf) {
     uint8_t req[] = {MODBUS_READ, reg, len};
     uint8_t resp[len + 4];
@@ -45,12 +46,12 @@ static esp_err_t read_reg_modbus(i2c_dev_t *dev, uint8_t reg, uint8_t len, uint8
     }
 
     if (resp[0] != MODBUS_READ) {
-        ESP_LOGE(AM2320_TAG, "nieprawidlowa odpowiedz MODBUS (%d != 0x03)", resp[0]);
+        ESP_LOGE(AM2320_TAG, "Invalid MODBUS reply (%d != 0x03)", resp[0]);
         err = ESP_ERR_INVALID_RESPONSE;
         goto fail;
     }
     if (resp[1] != len) {
-        ESP_LOGE(AM2320_TAG, "nieprawidlowa dlugosc odpowiedzi MODBUS reply (%d != %d)", resp[1], len);
+        ESP_LOGE(AM2320_TAG, "Invalid MODBUS reply length (%d != %d)", resp[1], len);
         err = ESP_ERR_INVALID_RESPONSE;
         goto fail;
     }
@@ -86,9 +87,12 @@ esp_err_t am2320_init_desc(i2c_dev_t *dev, i2c_port_t port, gpio_num_t sda_gpio,
     return i2c_dev_create_mutex(dev);
 }
 
-esp_err_t am2320_get_rht(i2c_dev_t *dev, float *temperature, float *humidity) {
+esp_err_t am2320_read(i2c_dev_t *dev, float *temperature, float *humidity) {
     uint8_t buf[4] = {0xff, 0xff, 0xff, 0xff};
     esp_err_t err = read_reg_modbus(dev, REG_RH_H, 4, buf);
+    if (err != ESP_OK) {
+        return err;
+    }
     *humidity = convert_humidity(((uint16_t) buf[0] << 8) + buf[1]);
     *temperature = convert_temperature(((uint16_t) buf[2] << 8) + buf[3]);
     return ESP_OK;

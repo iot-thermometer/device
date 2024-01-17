@@ -61,12 +61,12 @@ void app_main(void) {
     float temperature, humidity;
 
     while (1) {
-        esp_err_t res = am2320_get_rht(&dev, &temperature, &humidity);
-        if (res == ESP_OK)
+        esp_err_t res = am2320_read(&dev, &temperature, &humidity);
+        if (res == ESP_OK) {
             ESP_LOGI("", "Temperature: %.1f°C, Humidity: %.1f%%", temperature, humidity);
-        else
+        } else {
             ESP_LOGE("", "Error reading data: %d (%s)", res, esp_err_to_name(res));
-
+        }
         vTaskDelay(pdMS_TO_TICKS(500));
     }
 }
