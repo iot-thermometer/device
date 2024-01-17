@@ -10,6 +10,7 @@
 #include "dirent.h"
 #include "esp_sleep.h"
 #include "esp_heap_trace.h"
+#include "driver/adc.h"
 #include "am2320.c"
 
 #include "config.c"
@@ -24,6 +25,7 @@
 #include "time.c"
 #include "crypto.c"
 #include "ota.c"
+#include "soil_moisture.c"
 
 #include "app.c"
 
@@ -31,6 +33,7 @@ static heap_trace_record_t trace_record[100];
 
 //void app_main(void) {
 //    ESP_ERROR_CHECK(i2cdev_init());
+//    initialize_adc();
 //    ESP_ERROR_CHECK(heap_trace_init_standalone(trace_record, 100));
 //    ESP_LOGI("APP", "Firmware version: %f", FIRMWARE_VERSION);
 //    init_nvs();
@@ -46,8 +49,8 @@ static heap_trace_record_t trace_record[100];
 //    save_int_to_nvs("id", 66);
 //
 //    if (!exists_in_nvs("reading_int")) {
-//    save_int_to_nvs("reading_int", 2000);
-//    save_int_to_nvs("push_int", 1);
+//        save_int_to_nvs("reading_int", 2000);
+//        save_int_to_nvs("push_int", 5);
 //    }
 //    save_bool_to_nvs("wifi_enabled", false);
 //
@@ -56,6 +59,7 @@ static heap_trace_record_t trace_record[100];
 
 void app_main(void) {
     ESP_ERROR_CHECK(i2cdev_init());
+    initialize_adc();
     i2c_dev_t dev = {0};
     ESP_ERROR_CHECK(am2320_init_desc(&dev, 0, 21, 22));
     float temperature, humidity;
@@ -63,9 +67,9 @@ void app_main(void) {
     while (1) {
         esp_err_t res = am2320_read(&dev, &temperature, &humidity);
         if (res == ESP_OK) {
-            ESP_LOGI("", "Temperature: %.1f°C, Humidity: %.1f%%", temperature, humidity);
+            ESP_LOGI("APP", "Temperature: %.1f°C, Humidity: %.1f%%", temperature, humidity);
         } else {
-            ESP_LOGE("", "Error reading data: %d (%s)", res, esp_err_to_name(res));
+            ESP_LOGE("APP", "Error reading data: %d (%s)", res, esp_err_to_name(res));
         }
         vTaskDelay(pdMS_TO_TICKS(500));
     }

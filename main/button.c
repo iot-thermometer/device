@@ -7,8 +7,7 @@
 
 static const char *BUTTON_TAG = "BUTTON";
 
-void button_observer()
-{
+void button_observer() {
     gpio_config_t io_conf;
     io_conf.intr_type = GPIO_INTR_DISABLE;
     io_conf.mode = GPIO_MODE_INPUT;
@@ -17,29 +16,26 @@ void button_observer()
     io_conf.pull_down_en = GPIO_PULLDOWN_DISABLE;
     gpio_config(&io_conf);
 
+    gpio_wakeup_enable(BUTTON_PIN, GPIO_INTR_LOW_LEVEL);
+    esp_sleep_enable_gpio_wakeup();
+
     int counter = 0;
 
-    while (1)
-    {
+    while (1) {
         int button_state = gpio_get_level(BUTTON_PIN);
 
-        if (button_state == 0)
-        {
+        if (button_state == 0) {
             ESP_LOGI(BUTTON_TAG, "Button is pressed for %d seconds!", counter);
             counter++;
-        }
-        else
-        {
+        } else {
             counter = 0;
         }
 
-        if (counter == 5)
-        {
+        if (counter == 3) {
             ESP_LOGI(BUTTON_TAG, "Resetting...");
             DIR *dir;
             dir = opendir("/spiffs");
-            while (true)
-            {
+            while (true) {
                 struct dirent *de = readdir(dir);
                 if (!de)
                     break;
@@ -58,7 +54,6 @@ void button_observer()
     }
 }
 
-void listen_for_reset()
-{
+void listen_for_reset() {
     xTaskCreate(button_observer, "button_observer", 2048, NULL, 10, NULL);
 }
