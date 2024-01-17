@@ -5,6 +5,8 @@
 
 #define BUTTON_PIN GPIO_NUM_0
 
+static const char *BUTTON_TAG = "BUTTON";
+
 void button_observer()
 {
     gpio_config_t io_conf;
@@ -23,7 +25,7 @@ void button_observer()
 
         if (button_state == 0)
         {
-            printf("Button is pressed for %d seconds!\n", counter);
+            ESP_LOGI(BUTTON_TAG, "Button is pressed for %d seconds!", counter);
             counter++;
         }
         else
@@ -33,9 +35,8 @@ void button_observer()
 
         if (counter == 5)
         {
-            printf("Resetting...\n");
+            ESP_LOGI(BUTTON_TAG, "Resetting...");
             DIR *dir;
-            struct dirent *ent;
             dir = opendir("/spiffs");
             while (true)
             {
@@ -46,7 +47,7 @@ void button_observer()
                 char *filename = malloc(512 * sizeof(char));
                 sprintf(filename, "/spiffs/%s", de->d_name);
                 remove(filename);
-                printf("Deleted: %s\n", de->d_name);
+                ESP_LOGI(BUTTON_TAG, "Deleted: %s", de->d_name);
             }
 
             ESP_ERROR_CHECK(reset_nvs());

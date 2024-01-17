@@ -1,174 +1,256 @@
-#define WDT_TIMEOUT 10000
-float read_sensor()
+#define WDT_TIMEOUT 10000000
+
+static const char *APP_TAG = "APP";
+
+void sleep_if_possible(int timeout)
 {
-    return 42.0;
+    esp_sleep_enable_timer_wakeup(timeout * 1000);
+    esp_light_sleep_start();
 }
 
-void pull_config()
+void push_data()
 {
-    const char *json = make_http_request("https://gist.githubusercontent.com/matisiekpl/cd086500b92dfa3b0493aa6f518ad5b7/raw/9848b277efde3ef75485a088b24e3ee188d6a1b7/device.json");
-    printf("CONFIG JSON: %s\n", json);
-    // parse_remote_config(json);
-}
+    ESP_LOGI(APP_TAG, "Attempting to push readings...");
+    //    ESP_LOGI("MEM", "Heap: %d", heap_caps_get_free_size(MALLOC_CAP_8BIT));
+    ESP_LOGI("MEM", "Memory: %d", (int)esp_get_free_heap_size());
 
-void push_loop()
-{
-    int push_interval = 10000;
+    char ssid[33];
+    char password[65];
+    read_str_from_nvs("ssid", ssid, 32);
+    read_str_from_nvs("password", password, 64);
+    save_bool_to_nvs("wifi_enabled", true);
 
-    while (1)
+    connect_wifi(ssid, password);
+
+    bool wifi_connected = false;
+    read_bool_from_nvs("wifi_connected", &wifi_connected);
+    int breaker = 0;
+    while (!wifi_connected)
     {
-        if (exists_in_nvs("push_interval"))
+        if (breaker > 10)
         {
-            read_int_from_nvs("push_interval", &push_interval);
-            printf("Push interval: %d\n", push_interval);
-        }
-
-        printf("Pushing...\n");
-
-        char ssid[33];
-        char password[65];
-        read_str_from_nvs("ssid", ssid, 32);
-        read_str_from_nvs("password", password, 64);
-        save_bool_to_nvs("wifi_enabled", true);
-        connect_wifi(ssid, password);
-
-        bool wifi_connected = false;
-        read_bool_from_nvs("wifi_connected", &wifi_connected);
-        while (!wifi_connected)
-        {
-            read_bool_from_nvs("wifi_connected", &wifi_connected);
-            printf("Waiting for wifi...\n");
-            vTaskDelay(pdMS_TO_TICKS(1000));
-        }
-        printf("Connected!\n");
-
-        // check_update();
-
-        pull_config();
-
-        obtain_time();
-        connect_mqtt();
-
-        DIR *dir;
-        struct dirent *ent;
-        dir = opendir("/spiffs");
-
-        int counter = 0;
-
-        int id;
-        read_int_from_nvs("id", &id);
-
-        while (true)
-        {
-            struct dirent *de = readdir(dir);
-            if (!de)
-                break;
-
-            char *filename = malloc(512 * sizeof(char));
-            sprintf(filename, "/spiffs/%s", de->d_name);
-            char *data = read_str_from_fs(filename);
-
-            if (strlen(data) == 0)
-                continue;
-
-            char *final_data = (char *)malloc((strlen(data)) * sizeof(char) + 17);
-            sprintf(final_data, "%d;%s", id, data);
-
-            int suc = send_message(final_data);
-            if (suc)
-            {
-                counter++;
-                remove(filename);
-                printf("Sent file: %s\n", de->d_name);
-            }
-            else
-            {
-                printf("Failed to send file: %s\n", de->d_name);
-            }
-        }
-
-        char *summary = (char *)malloc(100 * sizeof(char));
-        sprintf(summary, "Sent %d files", counter);
-        int suc = send_message(summary);
-        if (!suc)
-        {
-            disconnect_mqtt();
-            printf("Failed to push!\n");
-            save_bool_to_nvs("wifi_enabled", false);
+            ESP_LOGE(APP_TAG, "Attempting to connect to Wifi failed. Will try in next push attempt");
             disconnect_wifi();
+            vTaskDelete(NULL);
+            return;
+        }
+        read_bool_from_nvs("wifi_connected", &wifi_connected);
+        ESP_LOGW(APP_TAG, "Waiting for wifi (%d seconds)...", breaker);
+        vTaskDelay(pdMS_TO_TICKS(1000));
+        breaker++;
+    }
+    ESP_LOGI(APP_TAG, "Device is online!");
+
+    bool ota_status = check_update();
+    if (!ota_status)
+    {
+        ESP_LOGE(APP_TAG, "OTA failed. Contact manufacturer status website to ensure firmware server is online.");
+        disconnect_wifi();
+        vTaskDelete(NULL);
+    }
+
+    pull_config();
+
+    obtain_time();
+    bool mqtt_connected = connect_mqtt();
+    if (!mqtt_connected)
+    {
+        ESP_LOGE(APP_TAG,
+                 "MQTT broker is unavailable. Contact manufacturer status website to ensure broker is online.");
+        disconnect_mqtt();
+        disconnect_wifi();
+        vTaskDelete(NULL);
+    }
+
+    DIR *dir;
+    dir = opendir("/spiffs");
+
+    int counter = 0;
+
+    int id;
+    read_int_from_nvs("id", &id);
+
+    while (true)
+    {
+        struct dirent *de = readdir(dir);
+        if (!de)
+            break;
+
+        char filename[360];
+        sprintf(filename, "/spiffs/%s", de->d_name);
+        char data[600];
+        read_str_from_fs(filename, data);
+
+        if (strlen(data) == 0)
+        {
+            continue;
         }
 
-        disconnect_mqtt();
-        printf("Pushed!\n");
-        save_bool_to_nvs("wifi_enabled", false);
-        disconnect_wifi();
+        char final_data[700];
+        sprintf(final_data, "%d;%s", id, data);
 
-        vTaskDelay(pdMS_TO_TICKS(push_interval));
+        char kind[5];
+        kind[4] = 0;
+        kind[3] = filename[strlen(filename) - 1];
+        kind[2] = filename[strlen(filename) - 2];
+        kind[1] = filename[strlen(filename) - 3];
+        kind[0] = filename[strlen(filename) - 4];
+        char topic[20];
+        sprintf(topic, "%s/%d/%s", "sensors", id, kind);
+        int send_result = send_message(topic, final_data);
+        if (send_result)
+        {
+            counter++;
+            remove(filename);
+            ESP_LOGI(APP_TAG, "Sent file %s to topic %s", de->d_name, topic);
+        }
+        else
+        {
+            ESP_LOGE(APP_TAG, "Failed to send file %s to topic %s", de->d_name, topic);
+        }
     }
+    closedir(dir);
+
+    disconnect_mqtt();
+    ESP_LOGI(APP_TAG, "Data pushed!");
+    save_bool_to_nvs("wifi_enabled", false);
+    disconnect_wifi();
+    vTaskDelete(NULL);
 }
 
-void read_loop()
+void main_loop()
 {
-    int reading_interval = 4000;
+    int reading_interval = 100000;
+    int push_interval = 100;
+    int counter = 0;
+
+    char token[20];
+    read_str_from_nvs("token", token, 19);
+
     while (1)
     {
-        esp_task_wdt_reset();
-        if (exists_in_nvs("reading_interval"))
-        {
-            read_int_from_nvs("reading_interval", &reading_interval);
-            printf("Reading interval: %d\n", reading_interval);
-        }
-
-        float reading = read_sensor();
-
-        cJSON *root = cJSON_CreateObject();
+        //        esp_task_wdt_reset();
+        read_int_from_nvs("push_int", &push_interval);
+        read_int_from_nvs("reading_int", &reading_interval);
 
         time_t now;
         time(&now);
 
-        char token[20];
-        read_str_from_nvs("token", token, 19);
-
-        if (time(&now) > 10000)
+        bool temperature_valid = true;
+        bool soil_moisture_valid = true;
+        float temperature = 20.0;
+        float soil_moisture = 41.0;
+        time_t t = time(&now);
+        if (count_files() < 1000)
         {
-            int id;
-            read_int_from_nvs("id", &id);
-            cJSON_AddNumberToObject(root, "device_id", id);
-            cJSON_AddStringToObject(root, "type", "TEMPERATURE");
-            cJSON_AddNumberToObject(root, "value", esp_random());
+            if (time(&now) > 10000)
+            {
+                int id;
+                read_int_from_nvs("id", &id);
+                if (temperature_valid)
+                {
 
-            cJSON_AddNumberToObject(root, "time", time(&now));
+                    cJSON *temperature_payload = cJSON_CreateObject();
+                    cJSON_AddNumberToObject(temperature_payload, "device_id", id);
+                    cJSON_AddStringToObject(temperature_payload, "type", "TEMPERATURE");
+                    cJSON_AddNumberToObject(temperature_payload, "value", temperature);
+                    cJSON_AddNumberToObject(temperature_payload, "time", t);
+                    char *marshaled_temperature_payload = cJSON_PrintUnformatted(temperature_payload);
+                    char *encrypted_temperature_payload = encrypt_text(marshaled_temperature_payload, token);
+                    cJSON_Delete(temperature_payload);
+                    char temperature_filename[40];
+                    sprintf(temperature_filename, "/spiffs/%d.TEMP", (int)esp_random());
+                    save_str_to_fs(temperature_filename, encrypted_temperature_payload);
+                    free(marshaled_temperature_payload);
+                    free(encrypted_temperature_payload);
 
-            char *new_data = cJSON_PrintUnformatted(root);
-            char *encrypted_data = encrypt_text(new_data, token);
+                    ESP_LOGI(APP_TAG, "[%d] Temperature is %f | File: %s", push_interval - counter, temperature,
+                             temperature_filename);
+                }
+                else
+                {
+                    ESP_LOGW(APP_TAG, "Reading temperature was incorrect, skipping saving onto device");
+                }
 
-            cJSON_Delete(root);
+                if (soil_moisture_valid)
+                {
+                    cJSON *soil_moisture_payload = cJSON_CreateObject();
+                    cJSON_AddNumberToObject(soil_moisture_payload, "device_id", id);
+                    cJSON_AddStringToObject(soil_moisture_payload, "type", "SOIL_MOISTURE");
+                    cJSON_AddNumberToObject(soil_moisture_payload, "value", soil_moisture);
+                    cJSON_AddNumberToObject(soil_moisture_payload, "time", t);
+                    char *marshaled_soil_moisture_payload = cJSON_PrintUnformatted(soil_moisture_payload);
+                    char *encrypted_soil_moisture_payload = encrypt_text(marshaled_soil_moisture_payload, token);
+                    cJSON_Delete(soil_moisture_payload);
+                    char soil_moisture_filename[40];
+                    sprintf(soil_moisture_filename, "/spiffs/%d.SOIL", (int)esp_random());
+                    save_str_to_fs(soil_moisture_filename, encrypted_soil_moisture_payload);
+                    free(marshaled_soil_moisture_payload);
+                    free(encrypted_soil_moisture_payload);
 
-            char *filename = (char *)malloc(40 * sizeof(char));
-            sprintf(filename, "/spiffs/%d.txt", (int)esp_random());
-            // save_str_to_fs(filename, encrypted_data);
-            // printf("Saved file: %s\n", filename);
+                    ESP_LOGI(APP_TAG, "[%d] Soil moisture is %f | File: %s", push_interval - counter, soil_moisture,
+                             soil_moisture_filename);
+                }
+                else
+                {
+                    ESP_LOGW(APP_TAG, "Reading soil moisture was incorrect, skipping saving onto device");
+                }
+            }
+            else
+            {
+                ESP_LOGW(APP_TAG, "Device need at least once connect to Wifi to obtain time. Skipping reading.");
+            }
+        }
+        else
+        {
+            ESP_LOGW(APP_TAG, "Disk overflow. Please connect to Wifi with accessible broker or reset device");
         }
 
-        vTaskDelay(pdMS_TO_TICKS(reading_interval));
+        if (counter == push_interval)
+        {
+            counter = 0;
+            bool wifi_enabled = false;
+            read_bool_from_nvs("wifi_enabled", &wifi_enabled);
+            if (wifi_enabled)
+            {
+                ESP_LOGI(APP_TAG, "Aborting push, because another process is ongoing");
+            }
+            else
+            {
+                xTaskCreate(push_data, "push_data", 32768, NULL, 10, NULL);
+            }
+        }
+
+        counter++;
+
+        bool wifi_enabled = false;
+        read_bool_from_nvs("wifi_enabled", &wifi_enabled);
+        if (wifi_enabled)
+        {
+            vTaskDelay(pdMS_TO_TICKS(reading_interval));
+        }
+        else
+        {
+            ESP_LOGI(APP_TAG, "Going to take nap (%d ms), good night", reading_interval);
+            vTaskDelay(pdMS_TO_TICKS(100));
+            sleep_if_possible(reading_interval);
+            ESP_LOGI(APP_TAG, "Odpowiedzialnosc to wstawac rano");
+        }
     }
 }
-
-StaticTask_t xTaskBuffer;
 
 void run()
 {
     if (exists_in_nvs("ssid"))
     {
-        esp_task_wdt_config_t twdt_config = {
-            .timeout_ms = WDT_TIMEOUT,
-            .idle_core_mask = (1 << portNUM_PROCESSORS) - 1, // Bitmask of all cores
-            .trigger_panic = false,
-        };
-        esp_task_wdt_init(&twdt_config);
-        esp_task_wdt_add(NULL);
-        xTaskCreate(push_loop, "push_data", 32768, NULL, 10, NULL);
-        read_loop();
+        //        esp_task_wdt_config_t twdt_config = {
+        //                .timeout_ms = WDT_TIMEOUT,
+        //                .idle_core_mask = (1 << portNUM_PROCESSORS) - 1,
+        //                .trigger_panic = false,
+        //        };
+        //        esp_task_wdt_init(&twdt_config);
+        //        esp_task_wdt_add(NULL);
+        main_loop();
     }
     else
     {

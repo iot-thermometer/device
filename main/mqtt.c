@@ -3,7 +3,6 @@
 #include "mqtt_client.h"
 
 #define MQTT_BROKER_URI "mqtt://srv3.enteam.pl:1883"
-#define MQTT_TOPIC "sensors"
 #define MQTT_USERNAME ""
 #define MQTT_PASSWORD ""
 
@@ -14,40 +13,43 @@ static EventGroupHandle_t mqtt_event_group;
 #define MQTT_CONNECTED_BIT BIT0
 #define MQTT_DISCONNECTED_BIT BIT1
 
-static esp_err_t mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_t event_id, void *event_data)
-{
+static const char *MQTT_TAG = "MQTT";
+
+void disconnect_mqtt() {
+    esp_mqtt_client_stop(client);
+    esp_mqtt_client_destroy(client);
+
+    ESP_LOGI(MQTT_TAG, "Disconnected");
+    vTaskDelay(pdMS_TO_TICKS(1000));
+}
+
+static esp_err_t mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_t event_id, void *event_data) {
     esp_mqtt_event_handle_t event = event_data;
-    ESP_LOGD("", "Event: %d", event->event_id);
-    switch (event->event_id)
-    {
-    case MQTT_EVENT_CONNECTED:
-        ESP_LOGI("", "MQTT_EVENT_CONNECTED");
-        xEventGroupSetBits(mqtt_event_group, MQTT_CONNECTED_BIT);
-        break;
-    case MQTT_EVENT_DISCONNECTED:
-        ESP_LOGI("", "MQTT_EVENT_DISCONNECTED");
-        break;
-    default:
-        break;
+    ESP_LOGD(MQTT_TAG, "Event: %d", event->event_id);
+    switch (event->event_id) {
+        case MQTT_EVENT_CONNECTED:
+            ESP_LOGI(MQTT_TAG, "Connected");
+            xEventGroupSetBits(mqtt_event_group, MQTT_CONNECTED_BIT);
+            break;
+        case MQTT_EVENT_DISCONNECTED:
+            if (mqtt_event_group != NULL) {
+                xEventGroupSetBits(mqtt_event_group, MQTT_DISCONNECTED_BIT);
+            }
+            break;
+        case MQTT_EVENT_PUBLISHED:
+            ESP_LOGI(MQTT_TAG, "MQTT_EVENT_PUBLISHED, msg_id=%d", event->msg_id);
+            break;
+        default:
+            break;
     }
     return ESP_OK;
 }
 
-void disconnect_mqtt()
-{
-    esp_mqtt_client_stop(client);
-    esp_mqtt_client_destroy(client);
-
-    printf("Disconnected from mqtt\n");
-    vTaskDelay(pdMS_TO_TICKS(1000));
-}
-
-bool connect_mqtt()
-{
+bool connect_mqtt() {
     mqtt_event_group = xEventGroupCreate();
 
     esp_mqtt_client_config_t mqtt_cfg = {
-        .broker.address.uri = MQTT_BROKER_URI,
+            .broker.address.uri = MQTT_BROKER_URI,
     };
 
     client = esp_mqtt_client_init(&mqtt_cfg);
@@ -59,23 +61,20 @@ bool connect_mqtt()
                                            pdFALSE,
                                            pdFALSE,
                                            portMAX_DELAY);
-    vEventGroupDelete(mqtt_event_group);
 
-    if (bits & MQTT_CONNECTED_BIT)
-    {
-        ESP_LOGI("", "connected to mqtt");
+    esp_mqtt_client_unregister_event(client, ESP_EVENT_ANY_ID, mqtt_event_handler);
+
+    vEventGroupDelete(mqtt_event_group);
+    mqtt_event_group = NULL;
+
+    if (bits & MQTT_CONNECTED_BIT) {
         return true;
-    }
-    else if (bits & MQTT_DISCONNECTED_BIT)
-    {
-        ESP_LOGI("", "failed to connect to mqtt");
+    } else if (bits & MQTT_DISCONNECTED_BIT) {
         return false;
     }
     return false;
 }
 
-bool send_message(char *data)
-{
-    esp_mqtt_client_publish(client, MQTT_TOPIC, data, 0, 0, 0);
-    return true;
+bool send_message(char *topic, char *data) {
+    return esp_mqtt_client_publish(client, topic, data, 0, 0, 0) >= 0;
 }

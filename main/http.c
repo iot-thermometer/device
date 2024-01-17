@@ -18,7 +18,7 @@
 #define MAX_HTTP_OUTPUT_BUFFER 2048
 
 static EventGroupHandle_t http_event_group;
-static char *result = "";
+static char result[512];
 
 #define HTTP_BIT BIT0
 
@@ -28,6 +28,17 @@ esp_err_t _http_event_handler(esp_http_client_event_t *evt)
     static int output_len;
     switch (evt->event_id)
     {
+    case HTTP_EVENT_DISCONNECTED:
+        if (output_buffer != NULL)
+        {
+            free(output_buffer);
+            output_buffer = NULL;
+        }
+        output_len = 0;
+        break;
+    case HTTP_EVENT_ERROR:
+        ESP_LOGD("XXX", "HTTP_EVENT_ERROR: X");
+        break;
     case HTTP_EVENT_ON_DATA:
         if (output_len == 0 && evt->user_data)
         {
@@ -69,8 +80,6 @@ esp_err_t _http_event_handler(esp_http_client_event_t *evt)
     case HTTP_EVENT_ON_FINISH:
         if (output_buffer != NULL)
         {
-            printf("%s\n", output_buffer);
-            result = (char *)malloc(output_len);
             strncpy(result, output_buffer, output_len);
             result[output_len] = '\0';
             free(output_buffer);
@@ -85,24 +94,35 @@ esp_err_t _http_event_handler(esp_http_client_event_t *evt)
     return ESP_OK;
 }
 
-char *make_http_request(const char *url)
+void init_http()
 {
     http_event_group = xEventGroupCreate();
-    esp_http_client_config_t config = {
-        .url = url,
-        .event_handler = _http_event_handler,
-    };
+}
+
+char blank_url[512];
+esp_http_client_config_t config = {
+    .url = blank_url,
+    .event_handler = _http_event_handler,
+};
+
+void make_http_request(char *url, char *out)
+{
+    strcpy((char *)config.url, url);
     esp_http_client_handle_t client = esp_http_client_init(&config);
-    esp_http_client_perform(client);
-
-    xEventGroupWaitBits(http_event_group,
-                        HTTP_BIT,
-                        pdFALSE,
-                        pdFALSE,
-                        portMAX_DELAY);
-
+    esp_err_t err = esp_http_client_perform(client);
+    if (err == ESP_OK)
+    {
+        xEventGroupWaitBits(http_event_group,
+                            HTTP_BIT,
+                            pdFALSE,
+                            pdFALSE,
+                            portMAX_DELAY);
+    }
+    else
+    {
+        result[0] = '\0';
+    }
     esp_http_client_cleanup(client);
-    vEventGroupDelete(http_event_group);
-
-    return result;
+    strcpy(out, result);
+    xEventGroupClearBits(http_event_group, HTTP_BIT);
 }
