@@ -8,15 +8,26 @@
 #define I2C_FREQ_HZ (100000)
 #define MODBUS_READ (0x03)
 #define REG_RH_H (0x00)
-#define REG_T_H (0x02)
-#define REG_MODEL_H (0x08)
-#define REG_VER (0x0a)
-#define REG_DEV_ID_H (0x0b)
 
 #define DELAY_T1_US (800 + 100)
 #define DELAY_T2_US (1500 + 100)
 
 static const char *AM2320_TAG = "AM2320";
+
+static uint16_t crc16(uint8_t *data, size_t len) {
+    uint16_t crc = 0xffff;
+    while (len--) {
+        crc ^= *data++;
+        for (int i = 0; i < 8; i++) {
+            if (crc & 0x01) {
+                crc >>= 1;
+                crc ^= 0xa001;
+            } else
+                crc >>= 1;
+        }
+    }
+    return crc;
+}
 
 // spec page 20
 static esp_err_t read_reg_modbus(i2c_dev_t *dev, uint8_t reg, uint8_t len, uint8_t *buf) {
@@ -46,13 +57,19 @@ static esp_err_t read_reg_modbus(i2c_dev_t *dev, uint8_t reg, uint8_t len, uint8
     }
 
     if (resp[0] != MODBUS_READ) {
-        ESP_LOGE(AM2320_TAG, "Invalid MODBUS reply (%d != 0x03)", resp[0]);
+        ESP_LOGE(AM2320_TAG, "Invalid reply (%d != 0x03)", resp[0]);
         err = ESP_ERR_INVALID_RESPONSE;
         goto fail;
     }
     if (resp[1] != len) {
-        ESP_LOGE(AM2320_TAG, "Invalid MODBUS reply length (%d != %d)", resp[1], len);
+        ESP_LOGE(AM2320_TAG, "Invalid reply length (%d != %d)", resp[1], len);
         err = ESP_ERR_INVALID_RESPONSE;
+        goto fail;
+    }
+
+    if (crc16(resp, len + 2) != ((uint16_t) resp[len + 3] << 8) + resp[len + 2]) {
+        ESP_LOGE(AM2320_TAG, "Invalid control sum in reply");
+        err = ESP_ERR_INVALID_CRC;
         goto fail;
     }
 
