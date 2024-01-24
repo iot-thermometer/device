@@ -11,50 +11,67 @@
 
 static const char *FIRMWARE_TAG = "FIRMWARE";
 
-bool check_update() {
+bool check_update()
+{
     char *json = malloc(512 * sizeof(char));
     make_http_request(firmwareUrl, json);
-    if (strlen(json) > 0) {
+    if (strlen(json) > 0)
+    {
         ESP_LOGD(FIRMWARE_TAG, "FIRMWARE: %s", json);
         cJSON *root = cJSON_Parse(json);
         free(json);
-        if (root == NULL) {
+        if (root == NULL)
+        {
             const char *error_ptr = cJSON_GetErrorPtr();
-            if (error_ptr != NULL) {
+            if (error_ptr != NULL)
+            {
                 ESP_LOGE(FIRMWARE_TAG, "Error before: %s", error_ptr);
             }
         }
-        if (cJSON_HasObjectItem(root, "version")) {
+        if (cJSON_HasObjectItem(root, "version"))
+        {
             double version = cJSON_GetObjectItem(root, "version")->valuedouble;
             char *file = cJSON_GetObjectItem(root, "file")->valuestring;
-            cJSON_Delete(root);
-            if (version > FIRMWARE_VERSION) {
+
+            if (version > FIRMWARE_VERSION)
+            {
                 ESP_LOGI(FIRMWARE_TAG, "New firmware version is available. %f > %f", version, FIRMWARE_VERSION);
                 ESP_LOGI(FIRMWARE_TAG, "Performing automated OTA update...");
+                ESP_LOGI(FIRMWARE_TAG, "Downloading new firmware from %s", file);
 
                 esp_http_client_config_t config = {
-                        .url = file,
+                    .url = file,
                 };
                 esp_https_ota_config_t ota_config = {
-                        .http_config = &config,
+                    .http_config = &config,
                 };
                 esp_err_t ret = esp_https_ota(&ota_config);
-                if (ret == ESP_OK) {
+                if (ret == ESP_OK)
+                {
                     ESP_LOGI(FIRMWARE_TAG, "Firmware update downloaded, restarting...");
                     esp_restart();
                     return true;
-                } else {
+                }
+                else
+                {
                     ESP_LOGE(FIRMWARE_TAG, "OTA failed");
                     return false;
                 }
-            } else {
+            }
+            else
+            {
                 return true;
             }
-        } else {
+            cJSON_Delete(root);
+        }
+        else
+        {
             ESP_LOGE(FIRMWARE_TAG, "Firmware message is invalid");
         }
         cJSON_Delete(root);
-    } else {
+    }
+    else
+    {
         free(json);
         ESP_LOGE(FIRMWARE_TAG, "Error fetching firmware message");
     }
