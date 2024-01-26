@@ -44,16 +44,16 @@ void app_main(void)
     listen_for_reset();
     show_led();
 
-    // save_str_to_nvs("ssid", "iPhone (Mateusz)");
-    // save_str_to_nvs("password", "12345678");
-    // save_str_to_nvs("token", "grWUXyuIxLoBZrkv");
-    // save_int_to_nvs("id", 66);
+    save_str_to_nvs("ssid", "iPhone (Mateusz)");
+    save_str_to_nvs("password", "12345678");
+    save_str_to_nvs("token", "grWUXyuIxLoBZrkv");
+    save_int_to_nvs("id", 1);
 
-    if (!exists_in_nvs("reading_int"))
-    {
-        save_int_to_nvs("reading_int", 2000);
-        save_int_to_nvs("push_int", 5);
-    }
+    // if (!exists_in_nvs("reading_int"))
+    // {
+    save_int_to_nvs("reading_int", 25000);
+    save_int_to_nvs("push_int", 4);
+    // }
     save_bool_to_nvs("wifi_enabled", false);
 
     run();

@@ -2,13 +2,15 @@
 
 static const char *APP_TAG = "APP";
 
+#define MIN(x, y) (((x) < (y)) ? (x) : (y))
+
 void sleep_if_possible(int timeout)
 {
-    esp_sleep_enable_timer_wakeup(timeout * 1000);
-    esp_light_sleep_start();
+    esp_sleep_enable_timer_wakeup(MIN(timeout * 1000, 10000000));
+    esp_deep_sleep_start();
 }
 
-void push_data()
+void push_data(bool send)
 {
     ESP_LOGI(APP_TAG, "Attempting to push readings...");
     //    ESP_LOGI("MEM", "Heap: %d", heap_caps_get_free_size(MALLOC_CAP_8BIT));
@@ -124,12 +126,15 @@ void main_loop()
     int push_interval = 100;
     int counter = 0;
 
+    read_int_from_nvs("counter", &counter);
+
     char token[20];
     read_str_from_nvs("token", token, 19);
 
+    xTaskCreate(push_data, "push_data", 32768, false, 10, NULL);
+
     while (1)
     {
-        //        esp_task_wdt_reset();
         read_int_from_nvs("push_int", &push_interval);
         read_int_from_nvs("reading_int", &reading_interval);
 
@@ -152,6 +157,26 @@ void main_loop()
         {
             if (time(&now) > 10000)
             {
+
+                // int now = time(NULL);
+                // int last_read_timestamp = 0;
+                // read_int_from_nvs("last_r", &last_read_timestamp);
+
+                // bool try_read = false;
+
+                // printf("now: %d, last_read_timestamp: %d, reading_interval: %d\n", now, last_read_timestamp,
+                //        reading_interval / 1000);
+
+                // if (now - last_read_timestamp < reading_interval / 1000)
+                // {
+                //     ESP_LOGI(APP_TAG, "Last read was %d seconds ago, skipping reading", now - last_read_timestamp);
+                // }
+                // else
+                // {
+                //     try_read = true;
+                //     save_int_to_nvs("last_r", time(NULL));
+                // }
+
                 int id;
                 read_int_from_nvs("id", &id);
                 if (temperature_valid)
@@ -213,7 +238,7 @@ void main_loop()
             ESP_LOGW(APP_TAG, "Disk overflow. Please connect to Wifi with accessible broker or reset device");
         }
 
-        if (counter == push_interval)
+        if (counter >= push_interval)
         {
             counter = 0;
             bool wifi_enabled = false;
@@ -224,11 +249,13 @@ void main_loop()
             }
             else
             {
-                xTaskCreate(push_data, "push_data", 32768, NULL, 10, NULL);
+                // save_bool_to_nvs("send", true);
+                xTaskCreate(push_data, "push_data", 32768, true, 10, NULL);
             }
         }
 
         counter++;
+        save_int_to_nvs("counter", counter);
 
         bool wifi_enabled = false;
         read_bool_from_nvs("wifi_enabled", &wifi_enabled);
@@ -243,6 +270,14 @@ void main_loop()
             sleep_if_possible(reading_interval - 500);
             ESP_LOGI(APP_TAG, "Odpowiedzialnosc to wstawac rano");
         }
+    }
+}
+
+void periodically_check_for_updates()
+{
+    while (1)
+    {
+        vTaskDelay(pdMS_TO_TICKS(1000 * 60 * 60 * 24));
     }
 }
 

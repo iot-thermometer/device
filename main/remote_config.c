@@ -22,8 +22,8 @@ void parse_remote_config(char *json)
         ESP_LOGI(CONFIG_TAG, "Setting reading interval: %d", reading_interval);
         ESP_LOGI(CONFIG_TAG, "Setting push interval: %d", push_interval);
         // DEMO w trakcie demo nie zapisujemy do NVS, bo szkoda czasu na czekanie
-        // save_int_to_nvs("reading_int", reading_interval);
-        // save_int_to_nvs("push_int", push_interval);
+        save_int_to_nvs("reading_int", reading_interval);
+        save_int_to_nvs("push_int", push_interval);
     }
     else
     {

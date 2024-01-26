@@ -7,6 +7,7 @@ static uint blink_timeout = 150;
 
 void led_watcher()
 {
+    gpio_set_level(BLINK_GPIO, 0);
     while (1)
     {
         bool wifi_connected = false;
@@ -26,7 +27,7 @@ void led_watcher()
 
         gpio_set_level(BLINK_GPIO, 0);
         vTaskDelay(blink_delay / portTICK_PERIOD_MS);
-        gpio_set_level(BLINK_GPIO, 1);
+        // gpio_set_level(BLINK_GPIO, 1);
         vTaskDelay(blink_timeout / portTICK_PERIOD_MS);
     }
 }
